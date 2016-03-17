@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Proyecto JavaScript Devcode.la</title>
+    <link rel="stylesheet" type="text/css" href="css/estilo.css">
+    <script src="js/juegocartas.js" type="text/javascript"></script>
+</head>
+<body>
+    <header>
+        <h1>Juego de emparejar cartas</h1>
+    </header>
+    <section id="configuracion">
+        <h2>Configuración del juego</h2>
+        <form>
+            <select name="dimension" id="dimension" required>
+            </select>
+            <label>Número de intentos: <input id="intentos" type="text"></label>
+            <button name="empezar" id="empezar">Empezar rondas</button>
+            <button name="reiniciar" id="reiniciar">Reiniciar rondas</button>                
+        </form>
+    </section>
+    <section id="partida">
+        <h2>Partida</h2>
+        <div id="tablero">
+        </div>
+    </section>
+    <aside id="resultados">
+        <h3>Resultados</h3>
+        <table>
+            <tr>
+                <th></th>
+                <th>Jugadas</th>
+                <th>Ganadas</th>
+                <th>Perdidas</th>           
+            </tr>
+      </table>
+    </aside>
+    <footer>
+        Juego desarrollado por 
+        <a href="https://twitter.com/carlosurda">Carlos A. Gómez Urda</a>.
+    </footer>
+
+</body>
+</html>
