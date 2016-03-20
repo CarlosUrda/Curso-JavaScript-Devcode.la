@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * Herramientas con utilidades para otros programas.
  */

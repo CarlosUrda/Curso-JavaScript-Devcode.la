@@ -2,6 +2,9 @@
 
 /**
  * Mejoras:
+ * - Quizás es mejor crear el tablero cada vez con únicamente las cartas que set
+ *   vayan a usar en lugar de tener un tablero creado siempre con el máximo 
+ *   posible de cartas e ir ocultando o no dependiendo de la partida.
  */
 
 
@@ -18,27 +21,32 @@ var Tablero = (function()
     /**
      * Clase Carta
      */
-    class Carta extends ObjetoDOM
+    class _Carta extends ObjetoDOM
     {
         /**
          * Contructor de carta.
          *
+         * @param tablero Tablero al cual pertenece la carta.
          * @param id Id a usar como objeto DOM.
          * @param name Name a usar como objeto DOM.
          * @param obj Objeto DOM relacionado con la carta. Por defecto span.
          */
-        constructor( id, name, obj = document.createElement( "span"))
+        constructor( tablero, id, name, obj = document.createElement( "span"))
         {
             super( obj);
-            this.DOM.classList.add( "carta", "abajo");
+            this.DOM.classList.add( "carta");
             this.DOM.id = id;
             this.DOM.name = name;
             this.DOM.style.display = "none";
-            this.DOM.onclick = Carta.prototype.pulsar;
+            this.DOM.style.width = Math.ceil( 100/tablero.maxDimension)+"%";
+            this.DOM.addEventListener( "click",
+                    _Carta.prototype.pulsar.bind( this), false);
+            this.ponerHaciaAbajo();
+
             let thisPrv = priv( this);
-            thisPrv._bocaAbajo = true;
-            thisPrv._visible = false;
-            thisPrv._valor = null;  
+            thisPrv._enPartida = false;
+            thisPrv._valor = null; 
+            thisPrv._tablero = tablero;
         }
 
         /**
@@ -48,29 +56,7 @@ var Tablero = (function()
          */
         get estaHaciaAbajo()
         {
-            return priv( this)._bocaAbajo;
-        }
-
-        /**
-         * Propiedad para saber si la carta debe estar visible en el DOM.
-         *
-         * @return True/False si la carta debe estar visible o no en el DOM.
-         */
-        get esVisibleDOM()
-        {
-            return priv( this)._visible;
-        }
-
-        /**
-         * Cambiar la visibilidad del objeto DOM asociado con la carta.
-         *
-         * @param flag True/False si se desea hacer o no visible.
-         */
-        set visibleDOM( flag)
-        {
-            let thisPrv = priv( this);
-            thisPrv._visible = Boolean( flag);
-            this.DOM.style.display = thisPrv._visible ? "inline" : "none";
+            return priv( this)._estaHaciaAbajo;
         }
 
         /**
@@ -83,20 +69,73 @@ var Tablero = (function()
             return priv( this)._valor;
         }
 
+        /**
+         * Cambiar el valor de la carta.
+         */
+        set valor( v)
+        {
+            let thisPrv = priv( this)._valor;
+
+        }
+
+
+        /**
+         * Indicar si la carta está incluida dentro de la partida.
+         *
+         * @param valor Boolean que indica si está o no la carta en la partida.
+         */
+        set enPartida( valor)
+        {
+            priv( this)._enPartida = Boolean( valor);
+        }
+
+
+        /**
+         * Colocar una carta mirando boca abajo.
+         */
+        ponerHaciaAbajo()
+        {
+            this.DOM.classList.remove( "arriba");
+            this.DOM.classList.add( "abajo");
+            priv( this)._estaHaciaAbajo = true;
+        }
+
+        /**
+         * Colocar una carta mirando boca arriba.
+         */
+        ponerHaciaArriba()
+        {
+            this.DOM.classList.remove( "abajo");
+            this.DOM.classList.add( "arriba");
+            priv( this)._estaHaciaAbajo = false;
+        }
 
         /**
          * Dar la vuelta a la carta.
          */
         voltear()
         {
+            this.DOM.classList.toggle( "abajo");
+            this.DOM.classList.toggle( "arriba");
             let thisPrv = priv( this);
-            thisPrv._bocaAbajo = !thisPrv._bocaAbajo;
+            thisPrv._estaHaciaAbajo = !thisPrv._estaHaciaAbajo;
         }
 
 
         /**
+         * Manejador que se ejecutará cuando se pinche sobre la carta.
          */
         pulsar()
+        {            
+            let thisPrv = priv( this);
+            if (!this.estaHaciaAbajo() || !thisPrv._tablero.elegirCarta( this))
+            {
+                stopPropagation();
+                return;
+            }
+
+            this.voltear();            
+        }
     }
 
 
@@ -109,64 +148,144 @@ var Tablero = (function()
          *
          * @param obj Objeto DOM asociado con el tablero.
          * @param dimension Dimensión máxima que puede tener el tablero (par).
+         * @param partida Partida en la cual va a participar el tablero.
          */
-        constructor( obj, dimension)
+        constructor( obj, maxDimension, partida = null)
         {
-            if (dimension % 2 !== 0)
+            if (maxDimension % 2 !== 0)
                 throw new PersonalException( "La dimensión máxima no es par");
+            if (dimension % 2 !== 0)
+                throw new PersonalException( "La dimensión inicial no es par");
 
             super( obj);
+            this.DOM.addEventListener( "click",                    
+                    _Tablero.prototype.pulsar.bind( this), false);
             let thisPrv = priv( this);
-            thisPrv._maxDimension = dimension;
-            thisPrv._cartas = new Array( Math.pow( dimension, 2));
+            thisPrv._maxDimension = maxDimension;
+            thisPrv._cartas = new Array( Math.pow( maxDimension, 2));
+            thisPrv._cartasElegidas = new Array( 0);
 
             for (let i in thisPrv._cartas)
             {   
                 let id = "carta" + (i+1);
-                thisPrv._cartas[i] = new Carta( id, id);
+                thisPrv._cartas[i] = new Carta( this, id, id);
                 this.DOM.appendChild( thisPrv._cartas[i].DOM);
             }
+
+            if (partida)
+                this.inicializar( partida);
+            
+            thisPrv._partida = partida;
+        }
+
+        /**
+         * Obtener la máxima dimensión asignada al crear el tablero.
+         *
+         * @return Máxima dimensión asignada.
+         */
+        get maxDimension()
+        {
+            return priv( this)._maxDimension;
         }
 
 
         /**
          * Inicializa el tablero de cartas para empezar una nueva partida.
          *
-         * @param dimension Dimensión del tablero para la partida a iniciar.
+         * @param partida Partida en la cual va a participar el Tablero.      
          */
-        inicializaTablero( dimension)
+        inicializar( partida)
         {
-            if (dimension % 2 !== 0)
-                throw new PersonalException( "La dimensión no es par", -2);
-            if (dimension > thisPrv._maxDimension)
+            if (partida.dimension % partida.emparejados !== 0)
                 throw new PersonalException( 
-                        "Dimensión de la partida mayor al máximo permitido", -3);
+                        "Dimensión no válida para valor de emparejamiento", -2);
+            if (partida.dimension > thisPrv._maxDimension)
+                throw new PersonalException( 
+                        "Dimensión de partida mayor al máximo permitido", -3);
 
             let thisPrv = priv( this);
+            thisPrv._partida = partida;
 
-            let totalCartas = Math.pow( dimension, 2);
-            let valores = range( 1, totalCartas/2 + 1);
-            valores = valores.concat( valores);
+            let totalCartas = Math.pow( partida.dimension, 2);
+            let _valores = range( 1, totalCartas/partida.emparejados + 1);
+            let valores = [];
+            for (let i = 0; i < partida.emparejados; ++i)
+                valores = valores.concat( _valores);
 
             let i = 0;
             for (let carta of thisPrv._cartas)
             {
-                carta.classList.add( "abajo");
-                carta.classList.remove( "arriba");
-                if (i++ >= totalCartas)
+                if (++i > totalCartas)
                 {
-                    carta.style.display = "none";
+                    carta.DOM.style.display = "none";
+                    carta.enPartida = false;
+                    carta.valor = null;
                     continue;
                 }
 
+                carta.ponerHaciaAbajo();
                 let k = parseInt( Math.random()*valores.length);
-                carta.value = valores[k];
-                carta.style.display = "inline";
+                carta.valor = valores[k];
+                carta.DOM.style.display = "inline";
+                carta.enPartida = true;
                 valores.splice( k); 
-           }
+            }
 
-            tablero.style.width = Math.ceil( dimension * 100/MAX_DIM)+"%";
+            this.DOM.style.width = Math.ceil( 
+                    dimension * 100/thisPrv._maxDimension)+"%";
         }      
+
+
+        /**
+         * Manejador que se ejecutará cuando se pinche sobre alguna carta del
+         * tablero
+         */
+        pulsar()
+        {
+            let thisPrv = priv( this);
+            if (thisPrv._cartasElegidas.length < thisPrv._partida.emparejados)
+                return;
+
+            if (!thisPrv._cartasElegidas.slice( 1).every( 
+                        c => c.valor === thisPrv._cartasElegidas[0].valor))
+            {
+                thisPrv._cartasElegidas.forEach( c => c.ponerHaciaAbajo());
+            }
+
+            thisPrv._cartasElegidas = new Array(0);
+
+            thisPrv._partida.intento++;
+            thisPrv._partida.comprobarFinal();
+        }
+
+
+        /**
+         * Comprueba si el tablero está en una victoria: todas las cartas 
+         * hacia arriba al haber sido emparejadas.
+         */
+        esVictoria()
+        {
+            return priv( this)._cartas
+        }
+        
+
+        /**
+         * Método que añade una carta como escogida para emparejar con otras
+         * ya elegidas.
+         *
+         * @param carta Carta seleccionada.
+         * @return True/False si la carta es considerada para realizar la 
+         * comprobación de emparejamiento con otras cartas elegidas.
+         */
+        elegirCarta( carta)
+        {
+            let thisPrv = priv( this);
+            if (thisPrv._cartasElegidas.lentgth >= thisPrv._partida.emparejados)
+                return false;
+
+            thisPrv._cartasElegidas.push( carta);
+            return true;        
+        }
 
 
         /**
@@ -174,8 +293,10 @@ var Tablero = (function()
          */
         destruir() 
         {
-            this.DOM.textContent = "";
-            delete priv( this)._cartas;
+            this.DOM.innerHTML = "";
+            let thisPrv = priv( this);
+            delete thisPrv._cartas;
+            thisPrv._partida = null;
         }
     }
 
@@ -183,8 +304,99 @@ var Tablero = (function()
 })();
 
 
-class Partida 
+/**
+ * Clase Partida.
+ */
+var Partida = (function() 
 {
+    var priv = defPrivados();
+
+    class _Configuracion extends ObjetoDOM
+    {
+        /**
+         * Constructor.
+         *
+         * @param obj Objeto DOM donde se encuentran las opciones de
+         * configuración.
+         */
+        constructor( obj)
+        {
+            super( obj);
+            this.DOM.getElementById( "empezar").onclick = 
+                _Configuracion.prototype.pulsarEmpezar();
+            this.DOM.getElementById( "parar").onclick = 
+                _Configuracion.prototype.pulsarParar();
+            this.DOM.getElementById( "reiniciar").onclick = 
+                _Configuracion.prototype.pulsarReiniciar();
+
+        }
+
+        /**
+         * Manejador para cuando se pulsa el botón de empezar partida.
+         */
+        pulsarEmpezar()
+        {
+        }
+
+        /**
+         * Manejador para cuando se pulsa el botón de parar partida actual.
+         */
+        pulsarParar()
+        {
+        }
+
+
+        /**
+         * Manejador para cuando se pulsa el botón reiniciar datos de las 
+         * estadísticas.
+         */
+        pulsarReiniciar()
+        {
+        }
+
+    }
+
+    class _Estadisticas extends ObjetoDOM
+    {
+    }
+
+
+    class _Partida 
+    {
+        /**
+         * Constructor.
+         */
+        constructor( tablero, dimension, maxIntentos)
+        {
+            if (dimension > tablero.maxDimension)
+                throw new PersonalException( 
+                        "Dimensión de partida mayor a la máxima del tablero");
+
+            let thisPrv = priv( this);
+            thisPrv._intento = 0;
+            thisPrv._maxIntentos = maxIntentos;
+            thisPrv._tablero = tablero;
+            thisPrv._dimension = dimension;
+            tablero.inicializar( this)
+        }
+
+        set intento( valor)
+        {
+       // Al cambiar el número de intentos cambiarlo por pantalla.
+      //
+
+           priv( this)._intento = Number( valor);
+        }
+
+        /**
+         * Comprobar si la partida ha finalizado actuando en consecuencia.
+         */
+        comprobarFinal()
+        {
+        }
+    }
+
+    return _Partida;
 }
 
 
