@@ -37,14 +37,12 @@ var Tablero = (function()
             this.DOM.classList.add( "carta");
             this.DOM.id = id;
             this.DOM.name = name;
-            this.DOM.style.display = "none";
             this.DOM.style.width = Math.ceil( 100/tablero.maxDimension)+"%";
             this.DOM.addEventListener( "click",
                     _Carta.prototype.pulsar.bind( this), false);
             this.ponerHaciaAbajo();
 
             let thisPrv = priv( this);
-            thisPrv._enPartida = false;
             thisPrv._valor = null; 
             thisPrv._tablero = tablero;
         }
@@ -75,18 +73,7 @@ var Tablero = (function()
         set valor( v)
         {
             let thisPrv = priv( this)._valor;
-
-        }
-
-
-        /**
-         * Indicar si la carta está incluida dentro de la partida.
-         *
-         * @param valor Boolean que indica si está o no la carta en la partida.
-         */
-        set enPartida( valor)
-        {
-            priv( this)._enPartida = Boolean( valor);
+            if (this.estaHaciaArriba) this.ponerHaciaArriba();
         }
 
 
@@ -98,6 +85,7 @@ var Tablero = (function()
             this.DOM.classList.remove( "arriba");
             this.DOM.classList.add( "abajo");
             priv( this)._estaHaciaAbajo = true;
+            // Mostrar en el DOM la parte de abajo.
         }
 
         /**
@@ -108,6 +96,7 @@ var Tablero = (function()
             this.DOM.classList.remove( "abajo");
             this.DOM.classList.add( "arriba");
             priv( this)._estaHaciaAbajo = false;
+            // Mostrar en el DOM la parte de arriba
         }
 
         /**
@@ -128,7 +117,7 @@ var Tablero = (function()
         pulsar()
         {            
             let thisPrv = priv( this);
-            if (!this.estaHaciaAbajo() || !thisPrv._tablero.elegirCarta( this))
+            if (!this.estaHaciaAbajo() || !thisPrv._tablero.emparejarCarta(this))
             {
                 stopPropagation();
                 return;
@@ -141,121 +130,76 @@ var Tablero = (function()
 
     class _Tablero extends ObjetoDOM
     {    
-        static get MAX_DIM() { return 8; }
+        static get MAX_DIMENSION() { return 8; }
 
         /**
          * Constructor.
          *
          * @param obj Objeto DOM asociado con el tablero.
-         * @param dimension Dimensión máxima que puede tener el tablero (par).
          * @param partida Partida en la cual va a participar el tablero.
          */
-        constructor( obj, maxDimension, partida = null)
+        constructor( obj, partida)
         {
-            if (maxDimension % 2 !== 0)
-                throw new PersonalException( "La dimensión máxima no es par");
-            if (dimension % 2 !== 0)
-                throw new PersonalException( "La dimensión inicial no es par");
-
             super( obj);
             this.DOM.addEventListener( "click",                    
                     _Tablero.prototype.pulsar.bind( this), false);
-            let thisPrv = priv( this);
-            thisPrv._maxDimension = maxDimension;
-            thisPrv._cartas = new Array( Math.pow( maxDimension, 2));
-            thisPrv._cartasElegidas = new Array( 0);
-
-            for (let i in thisPrv._cartas)
-            {   
-                let id = "carta" + (i+1);
-                thisPrv._cartas[i] = new Carta( this, id, id);
-                this.DOM.appendChild( thisPrv._cartas[i].DOM);
-            }
-
-            if (partida)
-                this.inicializar( partida);
-            
-            thisPrv._partida = partida;
-        }
-
-        /**
-         * Obtener la máxima dimensión asignada al crear el tablero.
-         *
-         * @return Máxima dimensión asignada.
-         */
-        get maxDimension()
-        {
-            return priv( this)._maxDimension;
+            priv( this)._partida = partida;
+            this.construir();            
         }
 
 
         /**
-         * Inicializa el tablero de cartas para empezar una nueva partida.
-         *
-         * @param partida Partida en la cual va a participar el Tablero.      
+         * Construye un tablero de cartas inicializándolo para empezar una 
+         * nueva partida.
          */
-        inicializar( partida)
+        construir()
         {
-            if (partida.dimension % partida.emparejados !== 0)
-                throw new PersonalException( 
-                        "Dimensión no válida para valor de emparejamiento", -2);
-            if (partida.dimension > thisPrv._maxDimension)
-                throw new PersonalException( 
-                        "Dimensión de partida mayor al máximo permitido", -3);
-
+            this.DOM.innerHTML = "";
             let thisPrv = priv( this);
-            thisPrv._partida = partida;
-
-            let totalCartas = Math.pow( partida.dimension, 2);
+            let totalCartas = Math.pow( thisPrv._partida.dimension, 2);
+            thisPrv._cartas = new Array( totalCartas);
             let _valores = range( 1, totalCartas/partida.emparejados + 1);
             let valores = [];
             for (let i = 0; i < partida.emparejados; ++i)
                 valores = valores.concat( _valores);
 
-            let i = 0;
-            for (let carta of thisPrv._cartas)
-            {
-                if (++i > totalCartas)
-                {
-                    carta.DOM.style.display = "none";
-                    carta.enPartida = false;
-                    carta.valor = null;
-                    continue;
-                }
-
+            for (let i in thisPrv._cartas)
+            {   
+                let id = "carta" + (i+1);
+                carta = new Carta( this, id, id);
                 carta.ponerHaciaAbajo();
                 let k = parseInt( Math.random()*valores.length);
                 carta.valor = valores[k];
-                carta.DOM.style.display = "inline";
-                carta.enPartida = true;
                 valores.splice( k); 
+                this.DOM.appendChild( carta.DOM);
+                thisPrv._cartas[i] = carta;
             }
 
-            this.DOM.style.width = Math.ceil( 
+            thisPrv._cartasAEmparejar = new Array( 0); 
+            this.DOM.style.width = Math.ceil(
                     dimension * 100/thisPrv._maxDimension)+"%";
         }      
 
 
         /**
          * Manejador que se ejecutará cuando se pinche sobre alguna carta del
-         * tablero
+         * tablero. Comprueba si las cartas que se están emparejando coinciden
+         * o no para dejarlas boca arriba o volveras boca abajo.
          */
         pulsar()
         {
             let thisPrv = priv( this);
-            if (thisPrv._cartasElegidas.length < thisPrv._partida.emparejados)
+            if (thisPrv._cartasAEmparejar.length < thisPrv._partida.emparejados)
                 return;
 
-            if (!thisPrv._cartasElegidas.slice( 1).every( 
-                        c => c.valor === thisPrv._cartasElegidas[0].valor))
+            if (!thisPrv._cartasAEmparejar.slice( 1).every( 
+                        c => c.valor === thisPrv._cartasAEmparejar[0].valor))
             {
-                thisPrv._cartasElegidas.forEach( c => c.ponerHaciaAbajo());
+                thisPrv._cartasAEmparejar.forEach( c => c.ponerHaciaAbajo());
             }
 
-            thisPrv._cartasElegidas = new Array(0);
-
-            thisPrv._partida.intento++;
-            thisPrv._partida.comprobarFinal();
+            thisPrv._cartasAEmparejar = new Array(0);
+            thisPrv._partida.gastarIntento();
         }
 
 
@@ -265,25 +209,25 @@ var Tablero = (function()
          */
         esVictoria()
         {
-            return priv( this)._cartas
+            return priv( this)._cartas.every( c => c.estaHaciaArriba());
         }
         
 
         /**
          * Método que añade una carta como escogida para emparejar con otras
-         * ya elegidas.
+         * ya elegidas anteriormente.
          *
          * @param carta Carta seleccionada.
          * @return True/False si la carta es considerada para realizar la 
-         * comprobación de emparejamiento con otras cartas elegidas.
+         * comprobación de emparejamiento con otras cartas ya elegidas.
          */
-        elegirCarta( carta)
+        emparejarCarta( carta)
         {
             let thisPrv = priv( this);
-            if (thisPrv._cartasElegidas.lentgth >= thisPrv._partida.emparejados)
+            if (thisPrv._cartasAEmparejar.length >= thisPrv._partida.emparejados)
                 return false;
 
-            thisPrv._cartasElegidas.push( carta);
+            thisPrv._cartasAEmparejar.push( carta);
             return true;        
         }
 
@@ -365,27 +309,45 @@ var Partida = (function()
     {
         /**
          * Constructor.
+         *
+         * @param obj Objeto DOM donde se encuentran los detalles de la partida.
+         * @param dimension Dimension del tablero.
+         * @param emparejados Número de cartas a emparejar en cada intento.
+         * @param maxIntentos Máximo número de intentos disponibles.
          */
-        constructor( tablero, dimension, maxIntentos)
+        constructor( obj, dimension, emparejados, maxIntentos)
         {
-            if (dimension > tablero.maxDimension)
+            if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION)
+                throw new PersonalException( "Valor de Dimensión erróneo.");
+            if (emparejados < 2 || emparejados > dimension)
+                throw new PersonalException( "Valor erróneo de emparejados");
+            if (dimension % emparejados !== 0)
                 throw new PersonalException( 
-                        "Dimensión de partida mayor a la máxima del tablero");
+                        "Dimensión no válida para valor de emparejamiento");
+            if (maxIntentos < 1)
+                throw new PersonalException( "Valor erróneo de maxIntentos");
 
             let thisPrv = priv( this);
-            thisPrv._intento = 0;
+            thisPrv._intentos = 0;
             thisPrv._maxIntentos = maxIntentos;
-            thisPrv._tablero = tablero;
+            thisPrv._tablero = new Tablero( 
+                    document.getElementById( "tablero"), this);
             thisPrv._dimension = dimension;
-            tablero.inicializar( this)
+            thisPrv._emparejados = emparejados;
         }
 
-        set intento( valor)
-        {
-       // Al cambiar el número de intentos cambiarlo por pantalla.
-      //
 
-           priv( this)._intento = Number( valor);
+        /**
+         * Gastar un intento de los disponibles y comprobar si la partida ha 
+         * finalizado por victoria o por gasto de todos los intentos.
+         */
+        gastarIntento()
+        {
+            let thisPrv = priv( this);
+            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
+            this.DOM.getElementById("intentos").textContent = restantes;
+
+
         }
 
         /**
