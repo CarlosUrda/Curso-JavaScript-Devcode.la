@@ -2,13 +2,11 @@
 
 /**
  * Mejoras:
- * - Quizás es mejor crear el tablero cada vez con únicamente las cartas que set
- *   vayan a usar en lugar de tener un tablero creado siempre con el máximo 
- *   posible de cartas e ir ocultando o no dependiendo de la partida.
+ * - Que en las estadísticas cuente también el emparejamiento.
  */
 
 
-import {range, ObjetoDOM, defPrivados} from 'utilidades';
+import {range, divisibles, ObjetoDOM, defPrivados} from 'utilidades';
 
 
 /**
@@ -231,7 +229,6 @@ var Tablero = (function()
             return true;        
         }
 
-
         /**
          * Destruir el tablero de cartas.
          */
@@ -263,23 +260,51 @@ var Partida = (function()
          * @param obj Objeto DOM donde se encuentran las opciones de
          * configuración.
          */
-        constructor( obj)
+        constructor( obj, juego)
         {
             super( obj);
             this.DOM.getElementById( "empezar").onclick = 
-                _Configuracion.prototype.pulsarEmpezar();
+                _Configuracion.prototype.pulsarEmpezar.bind( this);
             this.DOM.getElementById( "parar").onclick = 
-                _Configuracion.prototype.pulsarParar();
+                _Configuracion.prototype.pulsarParar.bind( this);
             this.DOM.getElementById( "reiniciar").onclick = 
-                _Configuracion.prototype.pulsarReiniciar();
+                _Configuracion.prototype.pulsarReiniciar.bind( this);
+            this.DOM.getElementById( "reiniciar").onclick = 
+                _Configuracion.prototype.pulsarReiniciar.bind( this);
 
-        }
+            let thisPrv = priv( this);
+            thisPrv._juego = juego;
+
+            let select = this.DOM.getElementById( "dimension");
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            {
+                let opcion = document.createElement( "option");
+                opcion.value = i;
+                opcion.textContent = i;
+                select.appendChild( opcion);
+            }
+
+            select = this.DOM.getElementById( "emparejados");
+            for (let i of divisibles( Tablero.MAX_DIMENSION()))
+            {
+                let opcion = document.createElement( "option");
+                opcion.value = i;
+                opcion.textContent = i;
+                select.appendChild( opcion);
+            }
+
+       }
 
         /**
          * Manejador para cuando se pulsa el botón de empezar partida.
          */
         pulsarEmpezar()
         {
+            let thisPrv;
+            thisPrv._juego.guardarPartida();
+            
+            // Se crea una nueva partida.
+            
         }
 
         /**
@@ -300,15 +325,157 @@ var Partida = (function()
 
     }
 
+    /**
+     * Clase Estadísticas donde se guardan los datos con los resultados de 
+     * todas las partidas realizadas.
+     *
+     * Mejoras: 
+     * - Que cuente también el número asignado para emparejar.
+     */
     class _Estadisticas extends ObjetoDOM
     {
+        /**
+         * Constructor de Estadísticas.
+         *
+         * @param obj Objeto DOM asociado con las estadísticas.
+         * @param juego Objeto representando al Juego en sí.
+         */
+        constructor( obj, juego)
+        {
+            super( obj);
+            let thisPrv = priv( this);
+            thisPrv._juego = juego;
+            thisPrv._datos = {"total": {"total": 0, "victoria": 0, "derrota": 0}};
+
+            // Se construye la estructura en el DOM.
+            let tabla = this.DOM.getElementByTagName( "table");
+            let fila = document.createElement( "tr");
+            fila.dataset.tipo = "total";
+            fila.innerHTML = 
+                '<th>Total</th>
+                 <td class="total" data-res="total">0</td>
+                 <td class="victoria" data-res="victoria">0</td>
+                 <td class="derrota" data-res="derrota">0</td>'
+            tabla.appendChild( fila);
+
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            {
+                thisPrv._datos["dim"+i] = {"total":0, "victoria":0, "derrota":0};
+                fila = document.createElement( "tr");
+                fila.dataset.tipo = "dim"+i;
+                fila.innerHTML = 
+                    '<th>Dimensión ' + i + '</th>
+                     <td class="total" data-res="total">0</td>
+                     <td class="victoria" data-res="victoria">0</td>
+                     <td class="derrota" data-res="derrota">0</td>'
+                tabla.appendChild( fila);
+            }
+
+            this.DOM.getElementById( "reiniciar").onclick = 
+                _Estadisticas.prototype.inicializar.bind( this);
+            this.DOM.getElementById( "refrescar").onclick = 
+                _Estadisticas.prototype.refrescar.bind( this);
+       }
+
+
+        /**
+         * Se inicializan todos los datos de las estadísticas de las partidas 
+         * jugadas.
+         */
+        inicializar()
+        {
+            if (!confirm( "¿Deseas borrar todos los datos de estadísticas?")) 
+                return;
+               
+            let thisPrv = priv( this);
+            thisPrv._datos = {"total": {"total": 0, "victoria": 0, "derrota": 0}};
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            {
+                thisPrv._datos["dim"+i] = {"total":0, "victoria":0, "derrota":0};
+            }
+ 
+            refrescar();
+        }
+
+        /**
+         * Aumentar en las estadísticas una nueva victoria o derrota.
+         *
+         * @param final Tipo de partida finalizada: "victoria" o "derrota".
+         * @param dimension Dimensión de la partida finalizada.
+         */
+        puntuar( final, dimension)
+        {
+            if (final !== "victoria" || final !== "derrota")
+                throw new PersonalException( "Argumento final incorrecto");
+            if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION())
+                throw new PersonalException( "Argumento dimension incorrecto.");
+
+            let thisPrv = priv( this);
+            thisPrv._datos.total.total++;
+            thisPrv._datos.total[final]++
+            thisPrv._datos["dim"+dimension].total++;
+            thisPrv._datos["dim"+dimension][final]++;
+
+            refrescar();
+        }
+
+
+        /**
+         * Refrescar los datos de las estadísticas en pantalla
+         */
+        refrescar()
+        {
+            let thisPrv = priv( this);
+
+            for (let tr of this.DOM.getElementsByTagName( "tr"))
+            {
+                [].forEach.call( tr.getElementsByTagName( "td"), 
+                        td => td.textContent = 
+                              thisPrv._datos[tr.dataset.tipo][td.dataset.res];);
+            }
+        }
     }
 
 
-    class _Partida 
+    class _Juego
     {
         /**
-         * Constructor.
+         * Constructor de Juego.
+         */
+        constructor()
+        {
+            let thisPrv = priv( this);
+            thisPrv._configuracion = new _Configuracion( 
+                    document.getElementById( "configuracion"), this);
+            thisPrv._estadisticas = 
+                new _Estadisticas( document.getElementById( "estadisticas"));
+            thisPrv._partidasAnteriores = {};
+            thisPrv._partida = null;
+        }
+
+
+        /**
+         * Finalizar y almacenar la partida actual en la lista de partidas 
+         * finalizadas.
+         */
+        guardarPartida()
+        {            
+            let thisPrv = priv( this);
+            if (thisPrv._partida === null) return;
+
+            thisPrv._partidasAnteriores[thisPrv._partida.id] = thisPrv._partida;
+            thisPrv._partida = null;
+        }
+
+    }
+
+
+    var id = 1; // Id a ir asignando a cada partida.
+
+    class _Partida extends ObjetoDOM
+    {
+        /**
+         * Constructor de Partida..
          *
          * @param obj Objeto DOM donde se encuentran los detalles de la partida.
          * @param dimension Dimension del tablero.
@@ -327,15 +494,44 @@ var Partida = (function()
             if (maxIntentos < 1)
                 throw new PersonalException( "Valor erróneo de maxIntentos");
 
+            super( obj);
             let thisPrv = priv( this);
             thisPrv._intentos = 0;
             thisPrv._maxIntentos = maxIntentos;
             thisPrv._tablero = new Tablero( 
-                    document.getElementById( "tablero"), this);
+                    this.DOM.getElementById( "tablero"), this);
             thisPrv._dimension = dimension;
             thisPrv._emparejados = emparejados;
+            thisPrv._id = "" + id++;
         }
 
+        /**
+         * Atributo getter para obtener el valor de id.
+         */
+        get id()
+        {
+            return priv( this)._id;
+        }
+
+        /**
+         * Se incrementa el número de intentos y se muestra el cambio.
+         */
+        inc incIntentos()
+        {
+            let thisPrv = priv( this);
+            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
+            this.DOM.getElementById("intentos").textContent = restantes;
+        }
+
+        /**
+         * Modificar el mensaje del resultado de la partida.
+         *
+         * @param mensaje Mensaje a mostrar como resultado de la partida.
+         */
+        set resultado( mensaje)
+        {
+            priv( this).DOM.getElementById( "resultado").textContent = mensaje;
+        }
 
         /**
          * Gastar un intento de los disponibles y comprobar si la partida ha 
@@ -343,18 +539,18 @@ var Partida = (function()
          */
         gastarIntento()
         {
-            let thisPrv = priv( this);
-            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
-            this.DOM.getElementById("intentos").textContent = restantes;
+            this.incIntentos();
 
+            if (thisPrv._tablero.esVictoria())
+            {
+                this.resultado = "¡¡¡GANASTE!!!";
+                return;
+            }
 
-        }
-
-        /**
-         * Comprobar si la partida ha finalizado actuando en consecuencia.
-         */
-        comprobarFinal()
-        {
+            if (restantes == 0)
+            {
+                this.resultado = "HAS PERDIDO GAÑÁN";
+            }
         }
     }
 
@@ -363,33 +559,6 @@ var Partida = (function()
 
 
 
-
-
-
-/**
- * Inicializa las opciones de juego y las tablas de puntuación.
- */
-function inicializarPantallaDeJuego()
-{
-    let tabla = document.querySelector("#resultados > table");
-    let selector = document.getElementById( "dimension");
-    for (let i of dimensiones)
-    {
-        let fila = document.createElement( "tr");
-        fila.innerHTML = 
-            '<th>Dimensión ' + i + '</th>
-             <td class="jugadas"></td>
-             <td class="ganadas"></td>
-             <td class="perdidas"></td>'
-       //fila.id = "dimension" + i;
-       //fila.class = "dimension";
-       tabla.appendChild( fila);
-
-       let opcion = document.createElement( "option");
-       opcion.value = i;
-       selector.appendChild( opcion);
-    }
-}
 
 
 var botonEmpezar,
@@ -436,19 +605,6 @@ function pulsarBotonEmpezar( evento)
     valorIntentosRestantes = valorIntentos;
     intentosRestantes.textContent = valorIntentosRestantes;
 };
-
-
-/**
- * Cuando se reinician los datos de los resultados.
- */
-function pulsarBotonReiniciar( evento) 
-{
-    if (!confirm( "¿Deseas borrar todos los datos de resultados?")) return;
-    
-    // Se limpian las estadísticas
-    [].forEach.call( document.querySelectorAll( "#resultados td"), 
-                     x => x.textContent = 0)
-}
 
 
 /**

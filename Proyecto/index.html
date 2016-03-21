@@ -17,18 +17,17 @@
             <select name="emparejados" id="emparejados" required></select>
             <label>Número de intentos: <input id="intentos" type="text"></label>
             <button name="empezar" id="empezar">Empezar rondas</button>
-            <button name="reiniciar" id="reiniciar">Reiniciar rondas</button>
             <button name="parar" id="parar" disabled>Parar partida</button>
         </form>
     </section>
     <section id="partida">
         <h2>Partida</h2>
         <div id="intentos"></div>
-        <div id="tablero">
-        </div>
+        <div id="resultado"></div>
+        <div id="tablero"></div>
     </section>
-    <aside id="resultados">
-        <h3>Resultados</h3>
+    <aside id="estadisticas">
+        <h3>Estadísticas</h3>
         <table>
             <tr>
                 <th></th>
@@ -36,8 +35,10 @@
                 <th>Ganadas</th>
                 <th>Perdidas</th>           
             </tr>
-      </table>
-    </aside>
+        </table>
+        <button name="reiniciar" id="reiniciar">Reiniciar</button>
+        <button name="refrescar" id="refrescar">Refrescar</button>
+  </aside>
     <footer>
         Juego desarrollado por 
         <a href="https://twitter.com/carlosurda">Carlos A. Gómez Urda</a>.

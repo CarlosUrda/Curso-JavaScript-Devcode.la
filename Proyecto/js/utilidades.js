@@ -36,12 +36,26 @@ export range( ini, fin, paso=1)
 
 
 /**
+ * Obtener todos los números que dividen a un número dado (no exclusivamente 
+ * los factores).
+ *
+ * @param numero Número a calcular sus divisibles.
+ */
+export divisibles( numero)
+{
+    return (for (let i = 1; i < numero/2; ++i) if (numero % i == 0) i);
+}
+
+
+/**
  * Función para definir una zona de memoria privada para cada cada uno de los
  * objetos instanciados de una clase. En dicha zona se podrán guardar miembros
  * privados de cada objeto.
+ * Esta función debe ser llamada dentro de la función donde se define la Clase
+ * que va a usar miembros privados para sus instancias.
  *
- * @return Función function( obj) que recibe un objeto y devuelve la zona de 
- * memoria privada asignada para ese objeto instanciado.
+ * @return Función function( obj) que recibe un objeto como argumento y devuelve
+ * la zona de memoria privada asignada para ese objeto instanciado.
  */
 export function defPrivados()
 {
