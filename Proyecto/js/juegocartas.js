@@ -71,7 +71,6 @@ var Tablero = (function()
         set valor( v)
         {
             let thisPrv = priv( this)._valor;
-            if (this.estaHaciaArriba) this.ponerHaciaArriba();
         }
 
 
@@ -115,7 +114,8 @@ var Tablero = (function()
         pulsar()
         {            
             let thisPrv = priv( this);
-            if (!this.estaHaciaAbajo() || !thisPrv._tablero.emparejarCarta(this))
+            if (thisPrv._tablero.bloqueado || !this.estaHaciaAbajo() || 
+                !thisPrv._tablero.emparejarCarta( this))
             {
                 stopPropagation();
                 return;
@@ -139,9 +139,12 @@ var Tablero = (function()
         constructor( obj, partida)
         {
             super( obj);
-            this.DOM.addEventListener( "click",                    
-                    _Tablero.prototype.pulsar.bind( this), false);
-            priv( this)._partida = partida;
+            this.DOM.addEventListener( "click", 
+                                       _Tablero.prototype.pulsar.bind( this), 
+                                       false);
+            let thisPrv = priv( this);
+            thisPrv._partida = partida;
+            thisPrv._bloqueado = false;
             this.construir();            
         }
 
@@ -187,7 +190,8 @@ var Tablero = (function()
         pulsar()
         {
             let thisPrv = priv( this);
-            if (thisPrv._cartasAEmparejar.length < thisPrv._partida.emparejados)
+            if (thisPrv.bloqueado || 
+                thisPrv._cartasAEmparejar.length < thisPrv._partida.emparejados)
                 return;
 
             if (!thisPrv._cartasAEmparejar.slice( 1).every( 
@@ -197,19 +201,31 @@ var Tablero = (function()
             }
 
             thisPrv._cartasAEmparejar = new Array(0);
-            thisPrv._partida.gastarIntento();
+            thisPrv._bloqueado = thisPrv._partida.gastarIntento();
         }
 
 
         /**
-         * Comprueba si el tablero está en una victoria: todas las cartas 
-         * hacia arriba al haber sido emparejadas.
+         * Comprueba si todas las cartas del tablero están mirando hacia arriba.
+         *
+         * @return True/False dependiendo si todas las cartas miran arriba.
          */
-        esVictoria()
+        get estanCartasArriba()
         {
             return priv( this)._cartas.every( c => c.estaHaciaArriba());
         }
         
+
+        /**
+         * Atributo para saber si el tablero está bloqueado y no se puede 
+         * interactuar con él.
+         *
+         * @return True/False dependiendo si el tablero está bloqueado o no.
+         */
+        get bloqueado()
+        {
+            return priv( this)._bloqueado;
+        }
 
         /**
          * Método que añade una carta como escogida para emparejar con otras
@@ -259,52 +275,67 @@ var Partida = (function()
          *
          * @param obj Objeto DOM donde se encuentran las opciones de
          * configuración.
+         * @param juego Juego al cual pertenece toda la configuración.
+         * @throws ObjetoDOMException Si hay algún problema con los Objetos DOM.
          */
         constructor( obj, juego)
         {
             super( obj);
-            this.DOM.getElementById( "empezar").onclick = 
-                _Configuracion.prototype.pulsarEmpezar.bind( this);
-            this.DOM.getElementById( "parar").onclick = 
-                _Configuracion.prototype.pulsarParar.bind( this);
-            this.DOM.getElementById( "reiniciar").onclick = 
-                _Configuracion.prototype.pulsarReiniciar.bind( this);
-            this.DOM.getElementById( "reiniciar").onclick = 
-                _Configuracion.prototype.pulsarReiniciar.bind( this);
-
             let thisPrv = priv( this);
+
+            // Comprobación de la existencia de los objetos DOM.
+            thisPrv._botonEmpezar = this.DOM.getElementById( "empezar");
+            if (thisPrv._botonEmpezar === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "id=empezar");
+            thisPrv._botonParar = this.DOM.getElementById( "parar");
+            if (thisPrv._botonParar === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "id=parar");
+            thisPrv._botonReiniciar = this.DOM.getElementById( "reiniciar");
+            if (thisPrv._botonReiniciar === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "id=reiniciar");
+            thisPrv._selectDimension = this.DOM.getElementById( "dimension"); 
+            if (thisPrv._selectDimension === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "id=dimension");
+            thisPrv._selectEmparejados = this.DOM.getElementById( "emparejados");
+            if (thisPrv._selectEmparejados === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "id=emparejados");
+           
+
+            thisPrv._botonEmpezar.onclick = 
+                _Configuracion.prototype.pulsarEmpezar.bind( this);
+            thisPrv._botonParar.onclick = 
+                _Configuracion.prototype.pulsarParar.bind( this);
+            thisPrv._botonReiniciar.onclick = 
+                _Configuracion.prototype.pulsarReiniciar.bind( this);
+            thisPrv._selectDimension.onchange = 
+                _Configuracion.prototype.seleccionarDimension.bind( this);
+
             thisPrv._juego = juego;
 
-            let select = this.DOM.getElementById( "dimension");
             for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
             {
                 let opcion = document.createElement( "option");
                 opcion.value = i;
                 opcion.textContent = i;
-                select.appendChild( opcion);
+                thisPrv._selectDimension.appendChild( opcion);
             }
 
-            select = this.DOM.getElementById( "emparejados");
-            for (let i of divisibles( Tablero.MAX_DIMENSION()))
-            {
-                let opcion = document.createElement( "option");
-                opcion.value = i;
-                opcion.textContent = i;
-                select.appendChild( opcion);
-            }
+        }
 
-       }
 
         /**
          * Manejador para cuando se pulsa el botón de empezar partida.
          */
         pulsarEmpezar()
         {
-            let thisPrv;
-            thisPrv._juego.guardarPartida();
-            
-            // Se crea una nueva partida.
-            
+            let thisPrv = priv( this);
+
+            thisPrv._juego.crearPartida();
         }
 
         /**
@@ -323,6 +354,23 @@ var Partida = (function()
         {
         }
 
+
+        /**
+         * Manejador a ejecutar cada vez se selecciona una dimensión.
+         */
+        seleccionarDimension( evento)
+        {
+            let thisPrv = priv( this);
+            thisPrv._selectEmparejados.innerHTML = "";
+
+            for (let i of divisibles( evento.target.value))
+            {
+                let opcion = document.createElement( "option");
+                opcion.value = i;
+                opcion.textContent = i;
+                thisPrv._selectEmparejados.appendChild( opcion);
+            }
+        }
     }
 
     /**
@@ -348,14 +396,15 @@ var Partida = (function()
             thisPrv._datos = {"total": {"total": 0, "victoria": 0, "derrota": 0}};
 
             // Se construye la estructura en el DOM.
-            let tabla = this.DOM.getElementByTagName( "table");
+            let tabla = this.DOM.querySelector( "table");
+
             let fila = document.createElement( "tr");
             fila.dataset.tipo = "total";
             fila.innerHTML = 
-                '<th>Total</th>
+                `<th>Total</th>
                  <td class="total" data-res="total">0</td>
                  <td class="victoria" data-res="victoria">0</td>
-                 <td class="derrota" data-res="derrota">0</td>'
+                 <td class="derrota" data-res="derrota">0</td>`
             tabla.appendChild( fila);
 
             for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
@@ -364,14 +413,15 @@ var Partida = (function()
                 fila = document.createElement( "tr");
                 fila.dataset.tipo = "dim"+i;
                 fila.innerHTML = 
-                    '<th>Dimensión ' + i + '</th>
+                    `<th>Dimensión ${i}</th>
                      <td class="total" data-res="total">0</td>
                      <td class="victoria" data-res="victoria">0</td>
-                     <td class="derrota" data-res="derrota">0</td>'
+                     <td class="derrota" data-res="derrota">0</td>`
                 tabla.appendChild( fila);
             }
 
-            this.DOM.getElementById( "reiniciar").onclick = 
+            thisPrv._botonReiniciar = this.DOM.getElementById( "reiniciar");
+            .onclick = 
                 _Estadisticas.prototype.inicializar.bind( this);
             this.DOM.getElementById( "refrescar").onclick = 
                 _Estadisticas.prototype.refrescar.bind( this);
@@ -400,21 +450,22 @@ var Partida = (function()
         /**
          * Aumentar en las estadísticas una nueva victoria o derrota.
          *
-         * @param final Tipo de partida finalizada: "victoria" o "derrota".
+         * @param tipo Tipo de partida finalizada: "victoria" o "derrota".
          * @param dimension Dimensión de la partida finalizada.
+         * @throws PersonalException si hay errores con los argumentos.
          */
-        puntuar( final, dimension)
+        puntuar( tipo, dimension)
         {
-            if (final !== "victoria" || final !== "derrota")
+            if (tipo !== "victoria" || tipo !== "derrota")
                 throw new PersonalException( "Argumento final incorrecto");
             if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION())
                 throw new PersonalException( "Argumento dimension incorrecto.");
 
             let thisPrv = priv( this);
             thisPrv._datos.total.total++;
-            thisPrv._datos.total[final]++
+            thisPrv._datos.total[tipo]++
             thisPrv._datos["dim"+dimension].total++;
-            thisPrv._datos["dim"+dimension][final]++;
+            thisPrv._datos["dim"+dimension][tipo]++;
 
             refrescar();
         }
@@ -450,9 +501,39 @@ var Partida = (function()
             thisPrv._estadisticas = 
                 new _Estadisticas( document.getElementById( "estadisticas"));
             thisPrv._partidasAnteriores = {};
-            thisPrv._partida = null;
+            thisPrv._idPartidas = 1;
+            thisPrv._partida = null;    // Partida actual.
         }
 
+        /**
+         * Atributo estadísticas donde se encuentran todos los datos de las 
+         * estadísticas del juego.
+         *
+         * @return Objeto Estadisticas.
+         */
+        get estadisticas()
+        {
+            return priv( this)._estadisticas;
+        }
+
+        /**
+         * Crear una nueva partida.
+         *
+         * @param dimension Dimensión que tendrá la nueva partida.
+         * @param emparejados Número de cartas a emparejar en cada intento.
+         * @param intentos Número de intentos a disponer en la partida.
+         */
+        crearPartida( dimension, emparejados, intentos)
+        {
+            let thisPrv = priv( this);
+
+            this.guardarPartida();
+
+            thisPrv._partida = new _Partida( document.getElementById( "partida"), 
+                                             dimension, emparejados, intentos, 
+                                             ""+thisPrv._idPartidas++, this);
+            thisPrv._partida.resultado( "Partida en curso");
+        }
 
         /**
          * Finalizar y almacenar la partida actual en la lista de partidas 
@@ -470,8 +551,6 @@ var Partida = (function()
     }
 
 
-    var id = 1; // Id a ir asignando a cada partida.
-
     class _Partida extends ObjetoDOM
     {
         /**
@@ -481,8 +560,10 @@ var Partida = (function()
          * @param dimension Dimension del tablero.
          * @param emparejados Número de cartas a emparejar en cada intento.
          * @param maxIntentos Máximo número de intentos disponibles.
+         * @param id Id de la partida.
+         * @param juego Juego al cual pertenece a la partida.
          */
-        constructor( obj, dimension, emparejados, maxIntentos)
+        constructor( obj, dimension, emparejados, maxIntentos, id, juego)
         {
             if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION)
                 throw new PersonalException( "Valor de Dimensión erróneo.");
@@ -502,7 +583,8 @@ var Partida = (function()
                     this.DOM.getElementById( "tablero"), this);
             thisPrv._dimension = dimension;
             thisPrv._emparejados = emparejados;
-            thisPrv._id = "" + id++;
+            thisPrv._juego = juego;
+            thisPrv._id = id;
         }
 
         /**
@@ -511,16 +593,6 @@ var Partida = (function()
         get id()
         {
             return priv( this)._id;
-        }
-
-        /**
-         * Se incrementa el número de intentos y se muestra el cambio.
-         */
-        inc incIntentos()
-        {
-            let thisPrv = priv( this);
-            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
-            this.DOM.getElementById("intentos").textContent = restantes;
         }
 
         /**
@@ -533,24 +605,45 @@ var Partida = (function()
             priv( this).DOM.getElementById( "resultado").textContent = mensaje;
         }
 
+
         /**
+         * Se incrementa el número de intentos y se muestra el cambio.
+         */
+        incIntentos()
+        {
+            let thisPrv = priv( this);
+            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
+            this.DOM.getElementById("intentos").textContent = restantes;
+        }
+
+
+       /**
          * Gastar un intento de los disponibles y comprobar si la partida ha 
          * finalizado por victoria o por gasto de todos los intentos.
+         *
+         * @return True si la partida ha finalizado; False si no ha acabado.
          */
         gastarIntento()
         {
             this.incIntentos();
 
-            if (thisPrv._tablero.esVictoria())
+            if (thisPrv._tablero.estanCartasArriba)
             {
                 this.resultado = "¡¡¡GANASTE!!!";
-                return;
+                this( priv)._juego.estadisticas.puntuar( "victoria", 
+                                                         thisPrv._dimension);
+                return true;
             }
 
             if (restantes == 0)
             {
                 this.resultado = "HAS PERDIDO GAÑÁN";
+                this( priv)._juego.estadisticas.puntuar( "derrota", 
+                                                         thisPrv._dimension);
+               return true;
             }
+
+            return false;
         }
     }
 

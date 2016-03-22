@@ -71,30 +71,179 @@ export function defPrivados()
 
 
 /**
- * Excepción personalizada.
+ * Excepción general.
  */
-export var PersonalException = (function()
+export var GeneralException = (function()
 {
     var priv = defPrivados();
 
     class _PersonalException extends Error
     {
-        constructor( mensaje, codigo = -1)
+        /**
+         * Constructor.
+         *
+         * @param mensaje Descripción del error.
+         * @param codigo Código identificador del error.
+         * @param nombre Nombre del error.
+         */
+        constructor( codigo = -1, nombre = "Error", mensaje = "Error")
         {
             let thisPrv = priv( this);
             thisPrv._mensaje = String( mensaje);
             thisPrv._codigo = Number( codigo);
+            thisPrv._nombre = String( nombre);
         }
 
+        /**
+         * Mostrar la excepción como una cadena de caracteres.
+         */
         toString()
         {
             let thisPrv = priv( this);
-            return thisPrv._codigo + " " + thisPrv._mensaje
+            return thisPrv._codigo + ": " + thisPrv._nombre + " => " + 
+                   thisPrv._mensaje;
         }
     }
 
     return _PersonalException;
 })();
+
+
+/**
+ * Excepción causada por los argumentos.
+ */
+export var ArgumentosException = (function()
+{
+    var priv = defPrivados();
+
+    const _ERR_GENERAL       = "-1",
+          _ERR_RANGO_VALORES = "-2",
+          _ERR_TIPO_DATO     = "-3",
+          _ERR_VACIO         = "-4";
+
+    const _errores = {_ERR_GENERAL: 
+                            {nombre:  "general", 
+                             mensaje: "Error en los argumentos"},
+                      _ERR_RANGO_VALORES: 
+                            {nombre:  "rango_valores",
+                             mensaje: "Valor fuera de rango en los argumentos"},
+                      _ERR_TIPO_DATO: 
+                            {nombre:  "tipo_dato",
+                             mensaje: "Tipo de dato inválido en argumentos."},
+                      _ERR_VACIO: 
+                            {nombre:  "vacio",
+                             mensaje: "Argumentos vacíos"}};
+
+
+    class _ArgumentosException extends GeneralException
+    {
+        /**
+         * Constructor.
+         *
+         * @param codigo Código identificador del error.
+         * @param args Nombre de los parámetros afectados en el error.
+         */
+        constructor( codigo = _ERR_GENERAL, ...args)
+        {
+            codigo = codigo in errores ? codigo : _ERR_GENERAL;
+            super( codigo, errores[codigo].nombre, errores[codigo].mensaje);
+
+            priv( this)._args = args;
+        }
+
+        /**
+         * Propiedades de los tipos de errores.
+         */
+        static get ERR_GENERAL          { return _ERR_GENERAL; }
+        static get ERR_RANGO_VALORES    { return _ERR_RANGO_VALORES; }
+        static get ERR_TIPO_DATO        { return _ERR_TIPO_DATO; }
+        static get ERR_VACIO            { return _ERR_VACIO; }
+
+
+        /**
+         * Mostrar la excepción como una cadena de caracteres.
+         */
+        toString()
+        {
+            let args = priv( this)._args;
+            return `[ArgumentosException]: ${super.toString()}
+                        ${args ? ("argumentos: " + args) : "" }`;
+        }
+    }
+
+    return _ArgumentosException;
+}
+
+
+/**
+ * Excepción causada con relación al DOM.
+ */
+export var ObjetoDOMException = (function()
+{
+    var priv = defPrivados();
+
+    const _ERR_GENERAL      = "-1";
+    const _ERR_NO_EXISTE    = "-2";
+    const _ERR_NO_CREADO    = "-3";
+    const _ERR_NO_MIEMBRO   = "-4";
+
+    const _errores = {_ERR_GENERAL: 
+                            {nombre:  "general", 
+                             mensaje: "Error causado por objeto DOM"},
+                      _ERR_NO_EXISTE: 
+                            {nombre:  "no_existe",
+                             mensaje: "El objeto DOM no existe."},
+                      _ERR_NO_CREADO: 
+                            {nombre:  "no_creado",
+                             mensaje: "El Objeto DOM no ha podido crearse."},
+                      _ERR_NO_MIEMBRO: 
+                            {nombre:  "no_miembro",
+                             mensaje: "El miembro del objeto DOM no existe."}};
+
+    class _ObjetoDOMException extends GeneralException
+    {
+        /**
+         * Constructor.
+         *
+         * @param codigo Código identificador del error.
+         * @param dom Representación del objeto DOM afectado, ya sea el mismo
+         * objeto en sí o una descripción.
+         */
+        constructor( codigo = _ERR_GENERAL, dom = null, datos = null)
+        {
+            codigo = codigo in errores ? codigo : _ERR_GENERAL;
+            super( codigo, errores[codigo].nombre, errores[codigo].mensaje);
+
+            thisPrv = priv( this);
+            thisPrv._dom = dom;
+            thisPrv._datos = datos;
+        }
+
+        /**
+         * Propiedades de los tipos de errores.
+         */
+        static get ERR_GENERAL         { return _ERR_GENERAL; }
+        static get ERR_NO_EXISTE       { return _ERR_NO_EXISTE; }
+        static get ERR_NO_CREADO       { return _ERR_NO_CREADO; }
+        static get ERR_NO_MIEMBRO      { return _ERR_NO_MIEMBRO; }
+
+
+        /**
+         * Mostrar la excepción como una cadena de caracteres.
+         */
+        toString()
+        {
+            thisPrv = priv( this);
+            let dom = thisPrv._dom;
+            let datos = thisPrv._datos;
+            return `[ObjetoDOMException]: ${super.toString()}
+                        ${dom !== null ? ("Objeto DOM: " + dom) : "" }
+                        ${datos !== null ? ("Datos: " + datos)}`;
+        }
+    }
+
+    return _ObjetoDOMException;
+}
 
 
 /**
