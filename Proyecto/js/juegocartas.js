@@ -3,6 +3,11 @@
 /**
  * Mejoras:
  * - Que en las estadísticas cuente también el emparejamiento.
+ * - Los objetos DOM se suelen comprobar solamente al crear los objetos. Podría 
+ *   mejorarse si se hace una comprobación exhaustiva cada vez que se vaya a
+ *   usar y si no existe, crearlo de nuevo. Aunque es posible que sea un poco 
+ *   exagerado y con simplemente comprobar que existen al instanciar los objetos
+ *   como ahora, sea suficiente.
  */
 
 
@@ -22,26 +27,28 @@ var Tablero = (function()
     class _Carta extends ObjetoDOM
     {
         /**
-         * Contructor de carta.
+         * Contructor de carta. Inicialmente la carta se sitúa hacia abajo.
          *
          * @param tablero Tablero al cual pertenece la carta.
          * @param id Id a usar como objeto DOM.
          * @param name Name a usar como objeto DOM.
+         * @param valor Valor de la carta.
          * @param obj Objeto DOM relacionado con la carta. Por defecto span.
          */
-        constructor( tablero, id, name, obj = document.createElement( "span"))
+        constructor( tablero, id, name, valor, 
+                     obj = document.createElement( "span"))
         {
             super( obj);
             this.DOM.classList.add( "carta");
             this.DOM.id = id;
             this.DOM.name = name;
-            this.DOM.style.width = Math.ceil( 100/tablero.maxDimension)+"%";
+            this.DOM.style.width = Math.ceil( 100/Tablero.MAX_DIMENSION)+"%";
             this.DOM.addEventListener( "click",
                     _Carta.prototype.pulsar.bind( this), false);
             this.ponerHaciaAbajo();
 
             let thisPrv = priv( this);
-            thisPrv._valor = null; 
+            thisPrv._valor = valor; 
             thisPrv._tablero = tablero;
         }
 
@@ -63,14 +70,6 @@ var Tablero = (function()
         get valor()
         {
             return priv( this)._valor;
-        }
-
-        /**
-         * Cambiar el valor de la carta.
-         */
-        set valor( v)
-        {
-            let thisPrv = priv( this)._valor;
         }
 
 
@@ -148,6 +147,28 @@ var Tablero = (function()
             this.construir();            
         }
 
+        /**
+         * Comprueba si todas las cartas del tablero están mirando hacia arriba.
+         *
+         * @return True/False dependiendo si todas las cartas miran arriba.
+         */
+        get estanCartasArriba()
+        {
+            return priv( this)._cartas.every( c => c.estaHaciaArriba());
+        }
+        
+
+        /**
+         * Atributo para saber si el tablero está bloqueado y no se puede 
+         * interactuar con él.
+         *
+         * @return True/False dependiendo si el tablero está bloqueado o no.
+         */
+        get bloqueado()
+        {
+            return priv( this)._bloqueado;
+        }
+
 
         /**
          * Construye un tablero de cartas inicializándolo para empezar una 
@@ -155,30 +176,28 @@ var Tablero = (function()
          */
         construir()
         {
-            this.DOM.innerHTML = "";
             let thisPrv = priv( this);
+
             let totalCartas = Math.pow( thisPrv._partida.dimension, 2);
             thisPrv._cartas = new Array( totalCartas);
-            let _valores = range( 1, totalCartas/partida.emparejados + 1);
+
+            let _valores = range(1, totalCartas/thisPrv._partida.emparejados+1);
             let valores = [];
-            for (let i = 0; i < partida.emparejados; ++i)
+            for (let i = 0; i < thisPrv._partida.emparejados; ++i)
                 valores = valores.concat( _valores);
 
             for (let i in thisPrv._cartas)
             {   
                 let id = "carta" + (i+1);
-                carta = new Carta( this, id, id);
-                carta.ponerHaciaAbajo();
                 let k = parseInt( Math.random()*valores.length);
-                carta.valor = valores[k];
+                thisPrv._cartas[i] = new Carta( this, id, id, valores[k]);
                 valores.splice( k); 
-                this.DOM.appendChild( carta.DOM);
-                thisPrv._cartas[i] = carta;
+                this.DOM.appendChild( thisPrv._cartas[i].DOM);
             }
 
             thisPrv._cartasAEmparejar = new Array( 0); 
             this.DOM.style.width = Math.ceil(
-                    dimension * 100/thisPrv._maxDimension)+"%";
+                    thisPrv._partida.dimension * 100/_Tablero.MAX_DIMENSION)+"%";
         }      
 
 
@@ -205,29 +224,7 @@ var Tablero = (function()
         }
 
 
-        /**
-         * Comprueba si todas las cartas del tablero están mirando hacia arriba.
-         *
-         * @return True/False dependiendo si todas las cartas miran arriba.
-         */
-        get estanCartasArriba()
-        {
-            return priv( this)._cartas.every( c => c.estaHaciaArriba());
-        }
-        
-
-        /**
-         * Atributo para saber si el tablero está bloqueado y no se puede 
-         * interactuar con él.
-         *
-         * @return True/False dependiendo si el tablero está bloqueado o no.
-         */
-        get bloqueado()
-        {
-            return priv( this)._bloqueado;
-        }
-
-        /**
+       /**
          * Método que añade una carta como escogida para emparejar con otras
          * ya elegidas anteriormente.
          *
@@ -271,47 +268,45 @@ var Partida = (function()
     class _Configuracion extends ObjetoDOM
     {
         /**
-         * Constructor.
+         * Constructor de Configuracion.
          *
          * @param obj Objeto DOM donde se encuentran las opciones de
          * configuración.
          * @param juego Juego al cual pertenece toda la configuración.
          * @throws ObjetoDOMException Si hay algún problema con los Objetos DOM.
+         * @throws ArgumentosException si los argumentos son erróneos.
          */
         constructor( obj, juego)
         {
             super( obj);
+            if (!juego)
+                throw new ArgumentosException( ArgumentosException.ERR_VACIO,
+                                               "Configuracion.constructor",
+                                               ["juego", juego]);
             let thisPrv = priv( this);
 
             // Comprobación de la existencia de los objetos DOM.
             thisPrv._botonEmpezar = this.DOM.getElementById( "empezar");
             if (thisPrv._botonEmpezar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
-                                              "id=empezar");
+                                              "Configuracion()", "id=empezar");
             thisPrv._botonParar = this.DOM.getElementById( "parar");
             if (thisPrv._botonParar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
-                                              "id=parar");
-            thisPrv._botonReiniciar = this.DOM.getElementById( "reiniciar");
-            if (thisPrv._botonReiniciar === null)
-                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
-                                              "id=reiniciar");
+                                              "Configuracion()", "id=parar");
             thisPrv._selectDimension = this.DOM.getElementById( "dimension"); 
             if (thisPrv._selectDimension === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
-                                              "id=dimension");
+                                              "Configuracion()", "id=dimension");
             thisPrv._selectEmparejados = this.DOM.getElementById( "emparejados");
             if (thisPrv._selectEmparejados === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
-                                              "id=emparejados");
+                                              "Configuracion()", "id=emparejados");
            
-
             thisPrv._botonEmpezar.onclick = 
                 _Configuracion.prototype.pulsarEmpezar.bind( this);
             thisPrv._botonParar.onclick = 
                 _Configuracion.prototype.pulsarParar.bind( this);
-            thisPrv._botonReiniciar.onclick = 
-                _Configuracion.prototype.pulsarReiniciar.bind( this);
             thisPrv._selectDimension.onchange = 
                 _Configuracion.prototype.seleccionarDimension.bind( this);
 
@@ -387,16 +382,26 @@ var Partida = (function()
          *
          * @param obj Objeto DOM asociado con las estadísticas.
          * @param juego Objeto representando al Juego en sí.
+         * @throws ObjetoDOMException si hay error con el DOM.
+         * @throws ArgumentosException si los argumentos son erróneos.
          */
         constructor( obj, juego)
         {
             super( obj);
+            if (!juego)
+                throw new ArgumentosException( ArgumentosException.ERR_VACIO,
+                                               "Estadisticas.constructor", 
+                                               ["juego", juego]);
             let thisPrv = priv( this);
             thisPrv._juego = juego;
-            thisPrv._datos = {"total": {"total": 0, "victoria": 0, "derrota": 0}};
+            thisPrv._datos = {total: {total: 0, victoria: 0, derrota: 0}};
 
             // Se construye la estructura en el DOM.
-            let tabla = this.DOM.querySelector( "table");
+            thisPrv._tabla = this.DOM.querySelector( "table");
+            if (thisPrv._tabla === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE_,
+                                              "Estadisticas.constructor",
+                                              this.DOM.tagName + " table");
 
             let fila = document.createElement( "tr");
             fila.dataset.tipo = "total";
@@ -405,11 +410,11 @@ var Partida = (function()
                  <td class="total" data-res="total">0</td>
                  <td class="victoria" data-res="victoria">0</td>
                  <td class="derrota" data-res="derrota">0</td>`
-            tabla.appendChild( fila);
+            thisPrv._tabla.appendChild( fila);
 
             for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
             {
-                thisPrv._datos["dim"+i] = {"total":0, "victoria":0, "derrota":0};
+                thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
                 fila = document.createElement( "tr");
                 fila.dataset.tipo = "dim"+i;
                 fila.innerHTML = 
@@ -417,31 +422,38 @@ var Partida = (function()
                      <td class="total" data-res="total">0</td>
                      <td class="victoria" data-res="victoria">0</td>
                      <td class="derrota" data-res="derrota">0</td>`
-                tabla.appendChild( fila);
+                thisPrv._tabla.appendChild( fila);
             }
 
             thisPrv._botonReiniciar = this.DOM.getElementById( "reiniciar");
-            .onclick = 
-                _Estadisticas.prototype.inicializar.bind( this);
-            this.DOM.getElementById( "refrescar").onclick = 
+            if (thisPrv._botonReiniciar === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "Estadisticas()", "id=reiniciar");
+            thisPrv._botonRefrescar = this.DOM.getElementById( "refrescar");
+            if (thisPrv._botonRefrescar === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
+                                              "Estadisticas()", "id=refrescar");
+            thisPrv._botonReiniciar.onclick = 
+                _Estadisticas.prototype.reiniciar.bind( this);
+            thisPrv._botonRefrescar.onclick = 
                 _Estadisticas.prototype.refrescar.bind( this);
-       }
+        }
 
 
         /**
          * Se inicializan todos los datos de las estadísticas de las partidas 
          * jugadas.
          */
-        inicializar()
+        reiniciar()
         {
             if (!confirm( "¿Deseas borrar todos los datos de estadísticas?")) 
                 return;
                
             let thisPrv = priv( this);
-            thisPrv._datos = {"total": {"total": 0, "victoria": 0, "derrota": 0}};
+            thisPrv._datos = {total: {total: 0, victoria: 0, derrota: 0}};
             for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
             {
-                thisPrv._datos["dim"+i] = {"total":0, "victoria":0, "derrota":0};
+                thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
             }
  
             refrescar();
@@ -452,14 +464,18 @@ var Partida = (function()
          *
          * @param tipo Tipo de partida finalizada: "victoria" o "derrota".
          * @param dimension Dimensión de la partida finalizada.
-         * @throws PersonalException si hay errores con los argumentos.
+         * @throws ArgumentosException si hay errores con los argumentos.
          */
         puntuar( tipo, dimension)
         {
             if (tipo !== "victoria" || tipo !== "derrota")
-                throw new PersonalException( "Argumento final incorrecto");
+                throw new ArgumentosException( ArgumentosException.ERR_RANGO, 
+                                               "Estadisticas.puntuar", 
+                                               ["tipo", tipo]);
             if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION())
-                throw new PersonalException( "Argumento dimension incorrecto.");
+                throw new ArgumentosException( ArgumentosException.ERR_RANGO, 
+                                               "Estadisticas.puntuar", 
+                                               ["dimension", dimension]);
 
             let thisPrv = priv( this);
             thisPrv._datos.total.total++;
@@ -478,7 +494,7 @@ var Partida = (function()
         {
             let thisPrv = priv( this);
 
-            for (let tr of this.DOM.getElementsByTagName( "tr"))
+            for (let tr of thisPrv._tabla.DOM.getElementsByTagName( "tr"))
             {
                 [].forEach.call( tr.getElementsByTagName( "td"), 
                         td => td.textContent = 
@@ -522,6 +538,7 @@ var Partida = (function()
          * @param dimension Dimensión que tendrá la nueva partida.
          * @param emparejados Número de cartas a emparejar en cada intento.
          * @param intentos Número de intentos a disponer en la partida.
+         * @throws ObjetoDOMException Si el objeto DOM de id="partida" no existe
          */
         crearPartida( dimension, emparejados, intentos)
         {
@@ -529,9 +546,14 @@ var Partida = (function()
 
             this.guardarPartida();
 
-            thisPrv._partida = new _Partida( document.getElementById( "partida"), 
-                                             dimension, emparejados, intentos, 
-                                             ""+thisPrv._idPartidas++, this);
+            let partidaDOM = document.getElementById( "partida");
+            if (partidaDOM === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE,
+                                              "Juego.crearPartida", "id=partida");
+
+            thisPrv._partida = new _Partida( partidaDOM, dimension, emparejados, 
+                                             intentos, ""+thisPrv._idPartidas++,
+                                             this);
             thisPrv._partida.resultado( "Partida en curso");
         }
 
@@ -554,33 +576,41 @@ var Partida = (function()
     class _Partida extends ObjetoDOM
     {
         /**
-         * Constructor de Partida..
+         * Constructor de Partida.
          *
          * @param obj Objeto DOM donde se encuentran los detalles de la partida.
          * @param dimension Dimension del tablero.
          * @param emparejados Número de cartas a emparejar en cada intento.
-         * @param maxIntentos Máximo número de intentos disponibles.
+         * @param maxIntentos Máximo número de intentos disponibles > 0.
          * @param id Id de la partida.
          * @param juego Juego al cual pertenece a la partida.
+         * @param throws ArgumentosException Si hay errores en los argumentos.
          */
         constructor( obj, dimension, emparejados, maxIntentos, id, juego)
         {
-            if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION)
-                throw new PersonalException( "Valor de Dimensión erróneo.");
-            if (emparejados < 2 || emparejados > dimension)
-                throw new PersonalException( "Valor erróneo de emparejados");
-            if (dimension % emparejados !== 0)
-                throw new PersonalException( 
-                        "Dimensión no válida para valor de emparejamiento");
+            if (dimension < 2 || dimension > Tablero.MAX_DIMENSION ||
+                emparejados < 2 || emparejados > dimension || 
+                dimension % emparejados !== 0)
+                throw new ArgumentosException( ArgumentosException.ERR_RANGO,
+                                               "Partida.constructor()",
+                                               ["dimension", dimension],
+                                               ["emparejados", emparejados]);
             if (maxIntentos < 1)
-                throw new PersonalException( "Valor erróneo de maxIntentos");
+                throw new ArgumentosException( ArgumentosException.ERR_RANGO,
+                                               "Partida.constructor()",
+                                               ["maxIntentos", dimension]);
 
             super( obj);
             let thisPrv = priv( this);
             thisPrv._intentos = 0;
             thisPrv._maxIntentos = maxIntentos;
-            thisPrv._tablero = new Tablero( 
-                    this.DOM.getElementById( "tablero"), this);
+            thisPrv._tablero = new Tablero(document.createElement("div"), this);
+            let tableroDOM = this.DOM.getElementById( "tablero");
+            if (tableroDOM === null)
+                throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
+                                             "Partida.constructor","id=tablero");
+            tableroDOM.innerHTML = "";
+            tableroDOM.appendChild( thisPrv._tablero.DOM);
             thisPrv._dimension = dimension;
             thisPrv._emparejados = emparejados;
             thisPrv._juego = juego;
@@ -588,7 +618,9 @@ var Partida = (function()
         }
 
         /**
-         * Atributo getter para obtener el valor de id.
+         * Atributo getter para obtener el valor de id de la partida.
+         *
+         * @return Id de la partida.
          */
         get id()
         {
@@ -596,24 +628,58 @@ var Partida = (function()
         }
 
         /**
+         * Atributo getter para obtener la dimensión de la partida.
+         *
+         * @return Dimensión de la partida.
+         */
+        get dimension()
+        {
+            return priv( this)._dimension;
+        }
+
+        /**
+         * Atributo getter para obtener el número de cartas a emparejar en cada 
+         * intento durante la partida.
+         *
+         * @return Número de cartas a emparejar en cada intento.
+         */
+        get emparejados()
+        {
+            return priv( this)._emparejados;
+        }
+ 
+        /**
          * Modificar el mensaje del resultado de la partida.
          *
          * @param mensaje Mensaje a mostrar como resultado de la partida.
+         * @throws ObjetoDOMException Si hay error con los objetos DOM.
          */
         set resultado( mensaje)
         {
-            priv( this).DOM.getElementById( "resultado").textContent = mensaje;
+            let resultado = this.DOM.getElementById( "resultado");
+            if (resultado === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE,
+                                              "Partida.resultado",
+                                              "id=resultado");
+            resultado.textContent = mensaje;
         }
 
 
         /**
          * Se incrementa el número de intentos y se muestra el cambio.
+         *
+         * @throws ObjetoDOMException Si hay error con los objetos DOM.
          */
         incIntentos()
         {
+            let intentos = this.DOM.getElementById( "intentos");
+            if (intentos === null)
+                throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE,
+                                              "Partida.incIntentos",
+                                              "id=intentos");
+ 
             let thisPrv = priv( this);
-            let restantes = thisPrv._maxIntentos - ++thisPrv._intentos;
-            this.DOM.getElementById("intentos").textContent = restantes;
+            intentos.textContent = thisPrv._maxIntentos - ++thisPrv._intentos;
         }
 
 
@@ -650,24 +716,6 @@ var Partida = (function()
     return _Partida;
 }
 
-
-
-
-
-var botonEmpezar,
-    botonReiniciar,
-    botonParar;
-    jugando,
-    tablero, 
-    textIntentos,
-    intentosPartida,
-    intentosRestantes,
-    valorIntentosRestantes;
-    dimension,
-    valorDimension,
-    dimensiones;
-
-const MAX_DIM = 8; // Tiene que ser un valor par.
 
 
 /**

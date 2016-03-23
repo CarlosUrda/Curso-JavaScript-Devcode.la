@@ -2,6 +2,14 @@
 
 /**
  * Herramientas con utilidades para otros programas.
+ *
+ * Mejoras:
+ * - Añadir en GeneralException el rastro del objeto this desde el cual se lanza
+ *   la excepción. Hay que pensar cómo guardar este objeto ya que no se dispone 
+ *   del nombre de la variable desde el cual se llama al método donde ocurre la
+ *   excepción. Se puede usar toSource, pero el resultado es demasiado largo.
+ *   toString no vale, porque sólo dice el tipo de dato, y eso ya se sabe al 
+ *   proporcionar el nombre de la función (Clase.metodo).
  */
 
 
@@ -77,7 +85,7 @@ export var GeneralException = (function()
 {
     var priv = defPrivados();
 
-    class _PersonalException extends Error
+    class _GeneralException extends Error
     {
         /**
          * Constructor.
@@ -85,13 +93,16 @@ export var GeneralException = (function()
          * @param mensaje Descripción del error.
          * @param codigo Código identificador del error.
          * @param nombre Nombre del error.
+         * @param funcion Nombre de la función donde se generó el error.
          */
-        constructor( codigo = -1, nombre = "Error", mensaje = "Error")
+        constructor( codigo = -1, nombre = "Error", mensaje = "Error",
+                     funcion = "")
         {
             let thisPrv = priv( this);
             thisPrv._mensaje = String( mensaje);
             thisPrv._codigo = Number( codigo);
             thisPrv._nombre = String( nombre);
+            thisPrv._pilaFunciones = funcion ? [String( funcion)] : [];
         }
 
         /**
@@ -100,12 +111,23 @@ export var GeneralException = (function()
         toString()
         {
             let thisPrv = priv( this);
-            return thisPrv._codigo + ": " + thisPrv._nombre + " => " + 
-                   thisPrv._mensaje;
+            return `${thisPrv._codigo}: ${thisPrv._nombre} => ${thisPrv._mensaje}
+                    Funciones: ${thisPrv._pilaFunciones}`;
+        }
+
+        /**
+         * Se añade el nombre de una función a la pila de funciones a través de 
+         * las cuales ha pasado el error.
+         *
+         * @param funcion Nombre de la función a agregar a la pila de funciones.
+         */
+        agregarFuncion( funcion)
+        {
+            priv( this)._pilaFunciones.push( String( funcion));
         }
     }
 
-    return _PersonalException;
+    return _GeneralException;
 })();
 
 
@@ -116,23 +138,23 @@ export var ArgumentosException = (function()
 {
     var priv = defPrivados();
 
-    const _ERR_GENERAL       = "-1",
-          _ERR_RANGO_VALORES = "-2",
-          _ERR_TIPO_DATO     = "-3",
-          _ERR_VACIO         = "-4";
+    const _ERR_GENERAL      = "-1",
+          _ERR_RANGO        = "-2",
+          _ERR_TIPO         = "-3",
+          _ERR_VACIO        = "-4";
 
     const _errores = {_ERR_GENERAL: 
                             {nombre:  "general", 
                              mensaje: "Error en los argumentos"},
-                      _ERR_RANGO_VALORES: 
+                      _ERR_RANGO: 
                             {nombre:  "rango_valores",
                              mensaje: "Valor fuera de rango en los argumentos"},
-                      _ERR_TIPO_DATO: 
+                      _ERR_TIPO: 
                             {nombre:  "tipo_dato",
                              mensaje: "Tipo de dato inválido en argumentos."},
                       _ERR_VACIO: 
                             {nombre:  "vacio",
-                             mensaje: "Argumentos vacíos"}};
+                             mensaje: "Argumentos vacíos o nulos"}};
 
 
     class _ArgumentosException extends GeneralException
@@ -141,12 +163,17 @@ export var ArgumentosException = (function()
          * Constructor.
          *
          * @param codigo Código identificador del error.
-         * @param args Nombre de los parámetros afectados en el error.
+         * @param funcion Función donde se produjo la excepción.
+         * @param args Argumentos afectados en el error. Cada uno de los 
+         * parámetros puede ser únicamente un dato (como p.ej el nombre del 
+         * argumento afectado), o un array de datos describiendo cada argumento
+         * (P.ej: [nombre, valor, mensaje, ...]).
          */
-        constructor( codigo = _ERR_GENERAL, ...args)
+        constructor( codigo = _ERR_GENERAL, funcion = "", ...args)
         {
             codigo = codigo in errores ? codigo : _ERR_GENERAL;
-            super( codigo, errores[codigo].nombre, errores[codigo].mensaje);
+            super( codigo, errores[codigo].nombre, errores[codigo].mensaje,
+                   funcion);
 
             priv( this)._args = args;
         }
@@ -154,10 +181,10 @@ export var ArgumentosException = (function()
         /**
          * Propiedades de los tipos de errores.
          */
-        static get ERR_GENERAL          { return _ERR_GENERAL; }
-        static get ERR_RANGO_VALORES    { return _ERR_RANGO_VALORES; }
-        static get ERR_TIPO_DATO        { return _ERR_TIPO_DATO; }
-        static get ERR_VACIO            { return _ERR_VACIO; }
+        static get ERR_GENERAL      { return _ERR_GENERAL; }
+        static get ERR_RANGO        { return _ERR_RANGO; }
+        static get ERR_TIPO         { return _ERR_TIPO; }
+        static get ERR_VACIO        { return _ERR_VACIO; }
 
 
         /**
@@ -206,13 +233,18 @@ export var ObjetoDOMException = (function()
          * Constructor.
          *
          * @param codigo Código identificador del error.
+         * @param funcion Función donde se produjo la excepción.
          * @param dom Representación del objeto DOM afectado, ya sea el mismo
          * objeto en sí o una descripción.
+         * @param datos Parámetros con datos para describir el error relacionado 
+         * con el Objeto DOM. Cada uno de los parámetros puede ser un dato como 
+         * p.ej tipo de dato o valor.
          */
-        constructor( codigo = _ERR_GENERAL, dom = null, datos = null)
+        constructor( codigo = _ERR_GENERAL, funcion = "", dom = null, ...datos)
         {
             codigo = codigo in errores ? codigo : _ERR_GENERAL;
-            super( codigo, errores[codigo].nombre, errores[codigo].mensaje);
+            super( codigo, errores[codigo].nombre, errores[codigo].mensaje, 
+                   funcion);
 
             thisPrv = priv( this);
             thisPrv._dom = dom;
@@ -238,7 +270,7 @@ export var ObjetoDOMException = (function()
             let datos = thisPrv._datos;
             return `[ObjetoDOMException]: ${super.toString()}
                         ${dom !== null ? ("Objeto DOM: " + dom) : "" }
-                        ${datos !== null ? ("Datos: " + datos)}`;
+                        ${datos ? ("Datos: " + datos)}`;
         }
     }
 
@@ -258,12 +290,19 @@ export var ObjetoDOM = (function()
         /**
          * Constructor.
          *
-         * @param obj Objeto DOM a envolver.
+         * @param obj Objeto tipo DOM a envolver.
+         * @throws ArgumentosException Si existe algún error en los argumentos.
          */
         constructor( obj)
         {
-            if (!(obj && 'nodeType' in obj))
-                throw new PersonalException( "El objeto no es de tipo DOM");
+            if (!obj) 
+                throw new ArgumentosException( ArgumentosException.ERR_VACIO,
+                                               "ObjetoDOM.constructor", 
+                                               ["obj", obj]);
+            if (!('nodeType' in obj))
+                throw new ArgumentosException( ArgumentosException.ERR_TIPO,
+                                               "ObjetoDOM.constructor", 
+                                               ["obj", typeof obj]);
 
             let thisPriv = priv( this);
             thisPriv._DOM = obj;
