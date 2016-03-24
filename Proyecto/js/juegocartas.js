@@ -1,3 +1,5 @@
+//import * from 'utilidades';
+
 "use strict";
 
 /**
@@ -11,9 +13,6 @@
  * - Ver cómo destruir el árbol DOM del tablero cuando la partida se guarda y 
  *   volver a recrearlo cuando la partida se vuelve a mostrar.
  */
-
-
-import {range, divisibles, ObjetoDOM, defPrivados} from 'utilidades';
 
 
 var Juego = (function()
@@ -308,19 +307,19 @@ var Juego = (function()
             let thisPrv = priv( this);
 
             // Comprobación de la existencia de los objetos DOM.
-            thisPrv._botonEmpezar = this.DOM.getElementById( "empezar");
+            thisPrv._botonEmpezar = this.DOM.querySelector( "#empezar");
             if (thisPrv._botonEmpezar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
                                               "Configuracion()", "id=empezar");
-            thisPrv._botonParar = this.DOM.getElementById( "parar");
+            thisPrv._botonParar = this.DOM.querySelector( "#parar");
             if (thisPrv._botonParar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
                                               "Configuracion()", "id=parar");
-            thisPrv._selectDimension = this.DOM.getElementById( "dimension"); 
+            thisPrv._selectDimension = this.DOM.querySelector( "#dimension"); 
             if (thisPrv._selectDimension === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
                                               "Configuracion()", "id=dimension");
-            thisPrv._selectEmparejados = this.DOM.getElementById( "emparejados");
+            thisPrv._selectEmparejados = this.DOM.querySelector( "#emparejados");
             if (thisPrv._selectEmparejados === null)
                 throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
                                              "Configuracion()","id=emparejados");
@@ -335,7 +334,7 @@ var Juego = (function()
             thisPrv._botonParar.disabled = true;
             thisPrv._juego = juego;
 
-            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
             {
                 let opcion = document.createElement( "option");
                 opcion.value = i;
@@ -453,7 +452,7 @@ var Juego = (function()
                  <td class="derrota" data-res="derrota">0</td>`
             thisPrv._tabla.appendChild( fila);
 
-            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
             {
                 thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
                 fila = document.createElement( "tr");
@@ -466,11 +465,11 @@ var Juego = (function()
                 thisPrv._tabla.appendChild( fila);
             }
 
-            thisPrv._botonReiniciar = this.DOM.getElementById( "reiniciar");
+            thisPrv._botonReiniciar = this.DOM.querySelector( "#reiniciar");
             if (thisPrv._botonReiniciar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
                                               "Estadisticas()", "id=reiniciar");
-            thisPrv._botonRefrescar = this.DOM.getElementById( "refrescar");
+            thisPrv._botonRefrescar = this.DOM.querySelector( "#refrescar");
             if (thisPrv._botonRefrescar === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE, 
                                               "Estadisticas()", "id=refrescar");
@@ -492,7 +491,7 @@ var Juego = (function()
                
             let thisPrv = priv( this);
             thisPrv._datos = {total: {total: 0, victoria: 0, derrota: 0}};
-            for (let i = 2; i <= _Tablero.MAX_DIMENSION(); ++i)
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
             {
                 thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
             }
@@ -513,7 +512,7 @@ var Juego = (function()
                 throw new ArgumentosException( ArgumentosException.ERR_RANGO, 
                                                "Estadisticas.puntuar", 
                                                ["tipo", tipo]);
-            if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION())
+            if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION)
                 throw new ArgumentosException( ArgumentosException.ERR_RANGO, 
                                                "Estadisticas.puntuar", 
                                                ["dimension", dimension]);
@@ -539,7 +538,7 @@ var Juego = (function()
             {
                 [].forEach.call( tr.getElementsByTagName( "td"), 
                         td => td.textContent = 
-                              thisPrv._datos[tr.dataset.tipo][td.dataset.res];);
+                              thisPrv._datos[tr.dataset.tipo][td.dataset.res]);
             }
         }
     }
@@ -579,12 +578,12 @@ var Juego = (function()
 
             super( obj);
             let thisPrv = priv( this);
-            thisPrv._resultadoDOM = this.DOM.getElementById( "resultado");
+            thisPrv._resultadoDOM = this.DOM.querySelector( "#resultado");
             if (thisPrv._resultadoDOM === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE,
                                               "Partida.constructor",
                                               "id=resultado");
-            thisPrv._intentosDOM = this.DOM.getElementById( "intentos");
+            thisPrv._intentosDOM = this.DOM.querySelector( "#intentos");
             if (thisPrv._intentosDOM === null)
                 throw new ObjetoDOMException( ObjetoDOMException.ERR_NO_EXISTE,
                                               "Partida.constructor",
@@ -598,7 +597,7 @@ var Juego = (function()
             thisPrv._juego = juego;
             thisPrv._id = id;
             thisPrv._tablero = new _Tablero(document.createElement("div"), this);
-            let tableroDOM = this.DOM.getElementById( "tablero");
+            let tableroDOM = this.DOM.querySelector( "#tablero");
             if (tableroDOM === null)
                 throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
                                              "Partida.constructor","id=tablero");
@@ -718,9 +717,9 @@ var Juego = (function()
         {
             let thisPrv = priv( this);
             thisPrv._configuracion = new _Configuracion( 
-                    document.getElementById( "configuracion"), this);
-            thisPrv._estadisticas = 
-                new _Estadisticas( document.getElementById( "estadisticas"));
+                document.getElementById( "configuracion"), this);
+            thisPrv._estadisticas = new _Estadisticas( 
+                document.getElementById( "estadisticas"), this);
             thisPrv._partidasAnteriores = {};
             thisPrv._idPartidas = 1;
             thisPrv._partida = null;    // Partida actual.
@@ -800,9 +799,19 @@ var Juego = (function()
  * Al cargarse la página inicialmente, se crean los marcadores donde se van a 
  * guardar las estadísticas y también se crean las opciones de selección.
  */
-window.load = function( evento) 
+window.onload = function( evento) 
 {
-    let juego = new Juego();
+
+//    let juego = new Juego();
+    try
+    {
+        let juego = new Juego();
+    }
+    catch (e)
+    {
+        console.error( e);
+        console.error( e.toString());
+    }
 };
 
 

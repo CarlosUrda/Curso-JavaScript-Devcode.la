@@ -23,7 +23,7 @@
  * se pasa ini; o array con valores entre ini y fin-1 (en incrementos de paso) 
  * si se pasa también fin. Null si hay algún error.
  */
-export range( ini, fin, paso=1)
+function range( ini, fin, paso=1)
 {
     ini = parseInt( ini);
     paso = parseInt( paso);
@@ -44,14 +44,16 @@ export range( ini, fin, paso=1)
 
 
 /**
- * Obtener todos los números que dividen a un número dado (no exclusivamente 
- * los factores).
+ * Generador: Obtener todos los números que dividen a un número dado (no 
+ * exclusivamente los factores).
  *
  * @param numero Número a calcular sus divisibles.
+ * @return Generador de todos los números divisibles
  */
-export divisibles( numero)
+function *divisibles( numero)
 {
-    return (for (let i = 1; i < numero/2; ++i) if (numero % i == 0) i);
+    for (let i = 1; i < numero/2; ++i)
+        if (numero % i == 0) yield i;
 }
 
 
@@ -65,7 +67,7 @@ export divisibles( numero)
  * @return Función function( obj) que recibe un objeto como argumento y devuelve
  * la zona de memoria privada asignada para ese objeto instanciado.
  */
-export function defPrivados()
+function defPrivados()
 {
     var _objetosPrivados = new WeakMap();
 
@@ -81,10 +83,8 @@ export function defPrivados()
 /**
  * Excepción general.
  */
-export var GeneralException = (function()
+var GeneralException = (function()
 {
-    var priv = defPrivados();
-
     class _GeneralException extends Error
     {
         /**
@@ -98,11 +98,11 @@ export var GeneralException = (function()
         constructor( codigo = -1, nombre = "Error", mensaje = "Error",
                      funcion = "")
         {
-            let thisPrv = priv( this);
-            thisPrv._mensaje = String( mensaje);
-            thisPrv._codigo = Number( codigo);
-            thisPrv._nombre = String( nombre);
-            thisPrv._pilaFunciones = funcion ? [String( funcion)] : [];
+            super();
+            this.mensaje = String( mensaje);
+            this.codigo = Number( codigo);
+            this.nombre = String( nombre);
+            this.pilaFunciones = funcion ? [String( funcion)] : [];
         }
 
         /**
@@ -110,9 +110,8 @@ export var GeneralException = (function()
          */
         toString()
         {
-            let thisPrv = priv( this);
-            return `${thisPrv._codigo}: ${thisPrv._nombre} => ${thisPrv._mensaje}
-                    Funciones: ${thisPrv._pilaFunciones}`;
+            return `${this.codigo} (${this.nombre}) => ${this.mensaje}\n`
+                 + `    Funciones: ${this.pilaFunciones}`;
         }
 
         /**
@@ -123,7 +122,7 @@ export var GeneralException = (function()
          */
         agregarFuncion( funcion)
         {
-            priv( this)._pilaFunciones.push( String( funcion));
+            this.pilaFunciones.push( String( funcion));
         }
     }
 
@@ -134,25 +133,23 @@ export var GeneralException = (function()
 /**
  * Excepción causada por los argumentos.
  */
-export var ArgumentosException = (function()
+var ArgumentosException = (function()
 {
-    var priv = defPrivados();
-
     const _ERR_GENERAL      = "-1",
           _ERR_RANGO        = "-2",
           _ERR_TIPO         = "-3",
           _ERR_VACIO        = "-4";
 
-    const _errores = {_ERR_GENERAL: 
+    const _errores = {[_ERR_GENERAL]: 
                             {nombre:  "general", 
                              mensaje: "Error en los argumentos"},
-                      _ERR_RANGO: 
+                      [_ERR_RANGO]: 
                             {nombre:  "rango_valores",
                              mensaje: "Valor fuera de rango en los argumentos"},
-                      _ERR_TIPO: 
+                      [_ERR_TIPO]: 
                             {nombre:  "tipo_dato",
                              mensaje: "Tipo de dato inválido en argumentos."},
-                      _ERR_VACIO: 
+                      [_ERR_VACIO]: 
                             {nombre:  "vacio",
                              mensaje: "Argumentos vacíos o nulos"}};
 
@@ -171,20 +168,20 @@ export var ArgumentosException = (function()
          */
         constructor( codigo = _ERR_GENERAL, funcion = "", ...args)
         {
-            codigo = codigo in errores ? codigo : _ERR_GENERAL;
-            super( codigo, errores[codigo].nombre, errores[codigo].mensaje,
+            codigo = codigo in _errores ? codigo : _ERR_GENERAL;
+            super( codigo, _errores[codigo].nombre, _errores[codigo].mensaje,
                    funcion);
 
-            priv( this)._args = args;
+            this.args = args;
         }
 
         /**
          * Propiedades de los tipos de errores.
          */
-        static get ERR_GENERAL      { return _ERR_GENERAL; }
-        static get ERR_RANGO        { return _ERR_RANGO; }
-        static get ERR_TIPO         { return _ERR_TIPO; }
-        static get ERR_VACIO        { return _ERR_VACIO; }
+        static get ERR_GENERAL()    { return _ERR_GENERAL; }
+        static get ERR_RANGO()      { return _ERR_RANGO; }
+        static get ERR_TIPO()       { return _ERR_TIPO; }
+        static get ERR_VACIO()      { return _ERR_VACIO; }
 
 
         /**
@@ -192,38 +189,35 @@ export var ArgumentosException = (function()
          */
         toString()
         {
-            let args = priv( this)._args;
-            return `[ArgumentosException]: ${super.toString()}
-                        ${args ? ("argumentos: " + args) : "" }`;
+            return `[ArgumentosException]: ${super.toString()}\n`
+                 + `    ${this.args ? ("argumentos: " + this.args) : "" }`;
         }
     }
 
     return _ArgumentosException;
-}
+})();
 
 
 /**
  * Excepción causada con relación al DOM.
  */
-export var ObjetoDOMException = (function()
+var ObjetoDOMException = (function()
 {
-    var priv = defPrivados();
+    const _ERR_GENERAL      = "-1",
+          _ERR_NO_EXISTE    = "-2",
+          _ERR_NO_CREADO    = "-3",
+          _ERR_NO_MIEMBRO   = "-4";
 
-    const _ERR_GENERAL      = "-1";
-    const _ERR_NO_EXISTE    = "-2";
-    const _ERR_NO_CREADO    = "-3";
-    const _ERR_NO_MIEMBRO   = "-4";
-
-    const _errores = {_ERR_GENERAL: 
+    const _errores = {[_ERR_GENERAL]: 
                             {nombre:  "general", 
                              mensaje: "Error causado por objeto DOM"},
-                      _ERR_NO_EXISTE: 
+                      [_ERR_NO_EXISTE]: 
                             {nombre:  "no_existe",
                              mensaje: "El objeto DOM no existe."},
-                      _ERR_NO_CREADO: 
+                      [_ERR_NO_CREADO]: 
                             {nombre:  "no_creado",
                              mensaje: "El Objeto DOM no ha podido crearse."},
-                      _ERR_NO_MIEMBRO: 
+                      [_ERR_NO_MIEMBRO]: 
                             {nombre:  "no_miembro",
                              mensaje: "El miembro del objeto DOM no existe."}};
 
@@ -242,22 +236,21 @@ export var ObjetoDOMException = (function()
          */
         constructor( codigo = _ERR_GENERAL, funcion = "", dom = null, ...datos)
         {
-            codigo = codigo in errores ? codigo : _ERR_GENERAL;
-            super( codigo, errores[codigo].nombre, errores[codigo].mensaje, 
+            codigo = codigo in _errores ? codigo : _ERR_GENERAL;
+            super( codigo, _errores[codigo].nombre, _errores[codigo].mensaje, 
                    funcion);
 
-            thisPrv = priv( this);
-            thisPrv._dom = dom;
-            thisPrv._datos = datos;
+            this.dom = dom;
+            this.datos = datos;
         }
 
         /**
          * Propiedades de los tipos de errores.
          */
-        static get ERR_GENERAL         { return _ERR_GENERAL; }
-        static get ERR_NO_EXISTE       { return _ERR_NO_EXISTE; }
-        static get ERR_NO_CREADO       { return _ERR_NO_CREADO; }
-        static get ERR_NO_MIEMBRO      { return _ERR_NO_MIEMBRO; }
+        static get ERR_GENERAL()         { return _ERR_GENERAL; }
+        static get ERR_NO_EXISTE()       { return _ERR_NO_EXISTE; }
+        static get ERR_NO_CREADO()       { return _ERR_NO_CREADO; }
+        static get ERR_NO_MIEMBRO()      { return _ERR_NO_MIEMBRO; }
 
 
         /**
@@ -265,23 +258,20 @@ export var ObjetoDOMException = (function()
          */
         toString()
         {
-            thisPrv = priv( this);
-            let dom = thisPrv._dom;
-            let datos = thisPrv._datos;
-            return `[ObjetoDOMException]: ${super.toString()}
-                        ${dom !== null ? ("Objeto DOM: " + dom) : "" }
-                        ${datos ? ("Datos: " + datos)}`;
+            return `[ObjetoDOMException]: ${super.toString()}\n`
+                 + `    ${this.dom !== null ? ("Objeto DOM: " + this.dom) : "" }\n`
+                 + `    ${this.datos ? ("Datos: " + this.datos) : ""}`;
         }
     }
 
     return _ObjetoDOMException;
-}
+})();
 
 
 /**
  * Clase para envolver un objeto DOM y darle funcionalidad.
  */
-export var ObjetoDOM = (function()        
+var ObjetoDOM = (function()        
 {
     var priv = defPrivados();
 
