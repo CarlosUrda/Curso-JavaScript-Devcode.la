@@ -34,13 +34,13 @@ var Juego = (function()
          * @param obj Objeto DOM relacionado con la carta. Por defecto span.
          */
         constructor( tablero, id, name, valor, 
-                     obj = document.createElement( "span"))
+                     obj = document.createElement( "div"))
         {
             super( obj);
             this.DOM.classList.add( "carta");
             this.DOM.id = id;
             this.DOM.name = name;
-            this.DOM.style.width = Math.ceil( 100/Tablero.MAX_DIMENSION)+"%";
+            //this.DOM.style.width = Math.ceil( 100/_Tablero.MAX_DIMENSION)+"%";
             this.DOM.addEventListener( "click",
                     _Carta.prototype.pulsar.bind( this), false);
             this.ponerHaciaAbajo();
@@ -81,27 +81,39 @@ var Juego = (function()
             priv( this)._emparejada = Boolean( valor);
         }
 
+        /**
+         * Cambiar la propiedad que indica si una carta ha sido emparejada.
+         *
+         * @return valor Boolean que indica si la carta ha sido emparejada.
+         */
+        get emparejada()
+        {
+            return priv( this)._emparejada;
+        }
+
 
         /**
          * Colocar una carta mirando boca abajo.
          */
         ponerHaciaAbajo()
         {
+            let thisPrv = priv( this);
             this.DOM.classList.remove( "arriba");
             this.DOM.classList.add( "abajo");
-            priv( this)._estaHaciaAbajo = true;
-            // Mostrar en el DOM la parte de abajo.
-        }
+            thisPrv._estaHaciaAbajo = true;
+            this.DOM.innerHTML = "";
+       }
 
         /**
          * Colocar una carta mirando boca arriba.
          */
         ponerHaciaArriba()
         {
+            let thisPrv = priv( this);
             this.DOM.classList.remove( "abajo");
             this.DOM.classList.add( "arriba");
-            priv( this)._estaHaciaAbajo = false;
-            // Mostrar en el DOM la parte de arriba
+            thisPrv._estaHaciaAbajo = false;
+            this.DOM.innerHTML = thisPrv._valor;
         }
 
         /**
@@ -109,23 +121,21 @@ var Juego = (function()
          */
         voltear()
         {
-            this.DOM.classList.toggle( "abajo");
-            this.DOM.classList.toggle( "arriba");
-            let thisPrv = priv( this);
-            thisPrv._estaHaciaAbajo = !thisPrv._estaHaciaAbajo;
+            this.estaHaciaAbajo ? this.ponerHaciaArriba() 
+                                : this.ponerHaciaAbajo();
         }
 
 
         /**
          * Manejador que se ejecutará cuando se pinche sobre la carta.
          */
-        pulsar()
+        pulsar( evento)
         {            
             let thisPrv = priv( this);
-            if (thisPrv._tablero.bloqueado || !this.estaHaciaAbajo() || 
+            if (thisPrv._tablero.bloqueado || !this.estaHaciaAbajo || 
                 !thisPrv._tablero.emparejarCarta( this))
             {
-                stopPropagation();
+                evento.stopPropagation();
                 return;
             }
 
@@ -160,13 +170,13 @@ var Juego = (function()
         }
 
         /**
-         * Comprueba si todas las cartas del tablero están mirando hacia arriba.
+         * Comprueba si todas las cartas del tablero han sido emparejadas.
          *
-         * @return True/False dependiendo si todas las cartas miran arriba.
+         * @return True/False dependiendo si todas las cartas están emparejadas.
          */
-        get estanCartasArriba()
+        get estanCartasEmparejadas()
         {
-            return priv( this)._cartas.every( c => c.estaHaciaArriba());
+            return priv( this)._cartas.every( c => c.emparejada);
         }
         
         /**
@@ -197,8 +207,8 @@ var Juego = (function()
          * nueva partida.
          */
         construir()
-        {          
-            this.DOM.innerHTML = "";
+        {   
+            //this.DOM.innerHTML = "";
             let thisPrv = priv( this);
 
             let totalCartas = Math.pow( thisPrv._partida.dimension, 2);
@@ -209,18 +219,19 @@ var Juego = (function()
             for (let i = 0; i < thisPrv._partida.emparejados; ++i)
                 valores = valores.concat( _valores);
 
-            for (let i in thisPrv._cartas)
+            for (let i = 0; i < totalCartas; ++i)
             {   
                 let id = "carta" + (i+1);
                 let k = parseInt( Math.random()*valores.length);
                 thisPrv._cartas[i] = new _Carta( this, id, id, valores[k]);
-                valores.splice( k); 
+                valores.splice( k, 1); 
                 this.DOM.appendChild( thisPrv._cartas[i].DOM);
             }
 
             thisPrv._cartasAEmparejar = new Array( 0); 
             this.DOM.style.width = Math.ceil(
                     thisPrv._partida.dimension * 100/_Tablero.MAX_DIMENSION)+"%";
+
         }      
 
 
@@ -236,8 +247,8 @@ var Juego = (function()
                 thisPrv._cartasAEmparejar.length < thisPrv._partida.emparejados)
                 return;
 
-            if (!thisPrv._cartasAEmparejar.slice( 1).every( 
-                        c => c.valor === thisPrv._cartasAEmparejar[0].valor))
+            if (thisPrv._cartasAEmparejar.slice( 1).some( 
+                        c => c.valor !== thisPrv._cartasAEmparejar[0].valor))
             {
                 thisPrv._cartasAEmparejar.forEach( c => c.ponerHaciaAbajo());
             }
@@ -323,7 +334,8 @@ var Juego = (function()
             if (thisPrv._selectEmparejados === null)
                 throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
                                              "Configuracion()","id=emparejados");
-           
+            thisPrv._textIntentos = this.DOM.querySelector( "#intentos");
+                      
             thisPrv._botonEmpezar.onclick = 
                 _Configuracion.prototype.pulsarEmpezar.bind( this);
             thisPrv._botonParar.onclick = 
@@ -342,6 +354,7 @@ var Juego = (function()
                 thisPrv._selectDimension.appendChild( opcion);
             }
 
+            thisPrv._selectDimension.onchange();
         }
 
 
@@ -352,7 +365,10 @@ var Juego = (function()
         {
             let thisPrv = priv( this);
 
-            thisPrv._juego.crearPartida();
+            thisPrv._juego.crearPartida( thisPrv._selectDimension.value,
+                                         thisPrv._selectEmparejados.value,
+                                         thisPrv._textIntentos.value);
+
             this.cambiarEstadoMenus( true);
         }
 
@@ -366,7 +382,6 @@ var Juego = (function()
 
             let thisPrv = priv( this);
             thisPrv._juego.partida.finalizar( "derrota");
-            this.cambiarEstadoMenus( false);
         }
 
         
@@ -385,7 +400,7 @@ var Juego = (function()
             thisPrv._botonEmpezar.disabled = estadoPartida;
             thisPrv._botonParar.disabled = !estadoPartida;
             thisPrv._selectDimension.disabled = estadoPartida;
-            thisPrv._selectDimension.disabled = estadoPartida;
+            thisPrv._selectEmparejados.disabled = estadoPartida;
         }
 
 
@@ -397,8 +412,10 @@ var Juego = (function()
             let thisPrv = priv( this);
             thisPrv._selectEmparejados.innerHTML = "";
 
-            for (let i of divisibles( evento.target.value))
+            let dimension = thisPrv._selectDimension.value;
+            for (let i of divisibles( Math.pow( dimension, 2)))
             {
+                if (i == 1) continue;
                 let opcion = document.createElement( "option");
                 opcion.value = i;
                 opcion.textContent = i;
@@ -450,7 +467,7 @@ var Juego = (function()
                  <td class="total" data-res="total">0</td>
                  <td class="victoria" data-res="victoria">0</td>
                  <td class="derrota" data-res="derrota">0</td>`
-            thisPrv._tabla.appendChild( fila);
+            thisPrv._tabla.querySelector( "tbody").appendChild( fila);
 
             for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
             {
@@ -462,7 +479,7 @@ var Juego = (function()
                      <td class="total" data-res="total">0</td>
                      <td class="victoria" data-res="victoria">0</td>
                      <td class="derrota" data-res="derrota">0</td>`
-                thisPrv._tabla.appendChild( fila);
+                thisPrv._tabla.querySelector( "tbody").appendChild( fila);
             }
 
             thisPrv._botonReiniciar = this.DOM.querySelector( "#reiniciar");
@@ -496,7 +513,7 @@ var Juego = (function()
                 thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
             }
  
-            refrescar();
+            this.refrescar();
         }
 
         /**
@@ -508,7 +525,7 @@ var Juego = (function()
          */
         puntuar( tipo, dimension)
         {
-            if (tipo !== "victoria" || tipo !== "derrota")
+            if (tipo !== "victoria" && tipo !== "derrota")
                 throw new ArgumentosException( ArgumentosException.ERR_RANGO, 
                                                "Estadisticas.puntuar", 
                                                ["tipo", tipo]);
@@ -523,7 +540,7 @@ var Juego = (function()
             thisPrv._datos["dim"+dimension].total++;
             thisPrv._datos["dim"+dimension][tipo]++;
 
-            refrescar();
+            this.refrescar();
         }
 
 
@@ -534,12 +551,10 @@ var Juego = (function()
         {
             let thisPrv = priv( this);
 
-            for (let tr of thisPrv._tabla.DOM.getElementsByTagName( "tr"))
-            {
-                [].forEach.call( tr.getElementsByTagName( "td"), 
+            [].forEach.call( thisPrv._tabla.getElementsByTagName( "tr"), 
+                tr => [].forEach.call( tr.getElementsByTagName( "td"), 
                         td => td.textContent = 
-                              thisPrv._datos[tr.dataset.tipo][td.dataset.res]);
-            }
+                              thisPrv._datos[tr.dataset.tipo][td.dataset.res]));
         }
     }
 
@@ -565,15 +580,15 @@ var Juego = (function()
         constructor( obj, dimension, emparejados, maxIntentos, id, juego)
         {
             if (dimension < 2 || dimension > _Tablero.MAX_DIMENSION ||
-                emparejados < 2 || emparejados > dimension || 
-                dimension % emparejados !== 0)
+                emparejados < 2 || emparejados > dimension*dimension || 
+                dimension*dimension % emparejados !== 0)
                 throw new ArgumentosException( ArgumentosException.ERR_RANGO,
-                                               "Partida.constructor()",
+                                               "Partida.constructor",
                                                ["dimension", dimension],
                                                ["emparejados", emparejados]);
             if (maxIntentos < 1)
                 throw new ArgumentosException( ArgumentosException.ERR_RANGO,
-                                               "Partida.constructor()",
+                                               "Partida.constructor",
                                                ["maxIntentos", dimension]);
 
             super( obj);
@@ -644,7 +659,7 @@ var Juego = (function()
          */
         set resultado( mensaje)
         {
-            priv( this).resultadoDOM.textContent = mensaje;
+            priv( this)._resultadoDOM.textContent = mensaje;
         }
 
 
@@ -660,7 +675,7 @@ var Juego = (function()
             let intentosRestantes = thisPrv._maxIntentos - ++thisPrv._intentos;
             thisPrv._intentosDOM.textContent = intentosRestantes;
 
-            if (thisPrv._tablero.estanCartasArriba)
+            if (thisPrv._tablero.estanCartasEmparejadas)
             {
                 this.finalizar( "victoria");
             }
@@ -699,6 +714,7 @@ var Juego = (function()
                                                "Partida.finalizar",
                                                ["tipo", tipo]);
 
+            thisPrv._juego.configuracion.cambiarEstadoMenus( false);
             thisPrv._tablero.bloqueado = true;
         }
     }
@@ -737,6 +753,17 @@ var Juego = (function()
         }
 
         /**
+         * Atributo configuracion donde se encuentran todos los menús de
+         * configuración del juego.
+         *
+         * @return Objeto Configuracion.
+         */
+        get configuracion()
+        {
+            return priv( this)._configuracion;
+        }
+ 
+        /**
          * Atributo partida donde se encuentran todos los datos de la Partida
          * actual en juego. 
          *
@@ -770,7 +797,7 @@ var Juego = (function()
             thisPrv._partida = new _Partida( partidaDOM, dimension, emparejados, 
                                              intentos, ""+thisPrv._idPartidas++,
                                              this);
-            thisPrv._partida.resultado( "Partida en curso");
+            thisPrv._partida.resultado = "Partida en curso";
         }
 
         /**
@@ -795,6 +822,8 @@ var Juego = (function()
 
 
 
+var juego; 
+
 /**
  * Al cargarse la página inicialmente, se crean los marcadores donde se van a 
  * guardar las estadísticas y también se crean las opciones de selección.
@@ -805,7 +834,7 @@ window.onload = function( evento)
 //    let juego = new Juego();
     try
     {
-        let juego = new Juego();
+        juego = new Juego();
     }
     catch (e)
     {

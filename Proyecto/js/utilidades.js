@@ -32,14 +32,14 @@ function range( ini, fin, paso=1)
     if (fin === void 0)
     {        
         if (paso < 0 || ini < 0) return null;
-        return Array(Math.ceil(ini/paso)).map( (v, i)=>i*paso);
+        return new Array(Math.ceil(ini/paso)).fill(0).map( (v, i)=>i*paso);
     }
 
     let signo = Math.sign( paso);
     fin = parseInt( fin);
     if (isNaN( fin) || fin <= ini*signo) return null;
 
-    return Array(Math.ceil( (fin-ini)/paso)).map( (v, i) => ini + i*paso);
+    return new Array(Math.ceil((fin-ini)/paso)).fill(0).map((v,i)=>ini+ i*paso);
 } 
 
 
@@ -52,8 +52,8 @@ function range( ini, fin, paso=1)
  */
 function *divisibles( numero)
 {
-    for (let i = 1; i < numero/2; ++i)
-        if (numero % i == 0) yield i;
+    for (let i = 1; i <= numero/2; ++i)
+        if (numero % i === 0) yield i;
 }
 
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Proyecto JavaScript Devcode.la</title>
-    <!--<link rel="stylesheet" type="text/css" href="css/estilo.css">-->
+    <link rel="stylesheet" type="text/css" href="css/estilo.css">
     <script defer src="js/utilidades.js" type="text/javascript" charset="utf-8">
     </script>
     <script defer src="js/juegocartas.js" type="text/javascript" charset="utf-8">
@@ -15,33 +15,40 @@
     </header>
     <section id="configuracion">
         <h2>Configuración del juego</h2>
-        <form>
+        <div>
             <select name="dimension" id="dimension" required></select>
             <select name="emparejados" id="emparejados" required></select>
-            <label>Número de intentos: <input id="intentos" type="text"></label>
+            <label>Número de intentos: 
+                <input id="intentos" type="text" required>
+            </label>
             <button name="empezar" id="empezar">Empezar rondas</button>
             <button name="parar" id="parar" disabled>Parar partida</button>
-        </form>
+        </div>
     </section>
-    <section id="partida">
-        <h2>Partida</h2>
-        <div id="intentos"></div>
-        <div id="resultado"></div>
-        <div id="tablero"></div>
-    </section>
-    <aside id="estadisticas">
-        <h3>Estadísticas</h3>
-        <table>
-            <tr>
-                <th></th>
-                <th>Jugadas</th>
-                <th>Ganadas</th>
-                <th>Perdidas</th>           
-            </tr>
-        </table>
-        <button name="reiniciar" id="reiniciar">Reiniciar</button>
-        <button name="refrescar" id="refrescar">Refrescar</button>
-  </aside>
+    <div id="partida-estadisticas">
+        <section id="partida">
+            <h2>Partida</h2>
+            <div id="intentos"></div>
+            <div id="resultado"></div>
+            <div id="tablero"></div>
+        </section>
+        <aside id="estadisticas">
+            <h3>Estadísticas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Jugadas</th>
+                        <th>Ganadas</th>
+                        <th>Perdidas</th>           
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button name="reiniciar" id="reiniciar">Reiniciar</button>
+            <button name="refrescar" id="refrescar">Refrescar</button>
+        </aside>
+    </div>
     <footer>
         Juego desarrollado por 
         <a href="https://twitter.com/carlosurda">Carlos A. Gómez Urda</a>.
