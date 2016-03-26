@@ -1,22 +1,119 @@
-#partida-estadisticas {
+body {
+    padding: 0px 20px 0px 20px;
+}
+
+body h1 {
+    text-align: center;
+    text-decoration: underline;
+}
+
+
+#juego {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: stretch;
     align-content: space-between;
+    border: 2px solid black;
+    text-align: center;
+
 }
+
+#partida {
+    flex-grow: 1;
+    flex-basis: auto;
+    background-color: orange;
+}
+
+#juego aside {
+    flex-grow: 1;
+    flex-basis: auto;
+    flex-direction: column;
+    display: flex;
+    text-align: center;
+    padding: 0px 10px 10px 10px;
+}
+
+#estadisticas {
+    background-color: lightgreen;
+}
+
+#estadisticas table {
+    margin: auto;
+    font-family: monospace; 
+    font-size: 1.3em;
+}
+
+#estadisticas thead tr {
+    padding: 8px;
+    
+}
+
+#estadisticas tbody tr {
+    text-align: right;
+    padding: 5px;
+}
+
+#estadisticas tbody td {
+    text-align: center;
+}
+
+#estadisticas tbody th {
+    font-size: 0.9em;
+}
+
+#estadisticas tbody tr[data-tipo="total"] {
+    background-color: #ffce74;
+    font-size: 1.1em;
+}
+
+#configuracion {
+    background-color: lightblue;
+    padding: 0px 0px 10px 0px;
+}
+
+
+#configuracion div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#configuracion div label {
+    display: block;
+    width: 40%;
+    text-align: left;
+    padding: 3px;
+}
+
+#configuracion div select {
+    text-align: center;
+    width: 40%;
+}
+
+#configuracion div button {
+    text-align: center;
+    width: 40%;
+    padding: 4px; 
+    margin: 3px 0px 3px 0px;
+}
+
 
 
 .carta {
     border: 2px solid black;
     border-radius: 10%;
     cursor: pointer; 
-    width: 90px;
-    height: 200px;
-    margin: 2px;
+    width: 70px;
+    height: 130px;
+    margin: 3px;
     font-size: 2.5em;
     text-align: center;
+    box-shadow: grey 5px 5px 5px;
+    text-shadow: white 4px 4px 4px;
 }
+
+
 
 #tablero div {
     display: flex;
@@ -24,6 +121,7 @@
     justify-content: center;
     align-items: center;
     align-content: center;
+    padding: 15px;
 }
 
 
@@ -42,4 +140,46 @@
 
 .arriba {
     background-color: lightyellow;
+}
+
+#botones-estadisticas {
+    padding: 10px;
+    text-align: center;
+}
+
+footer {
+    padding: 20px 0px 20px 0px;
+}
+
+@media (max-width: 700px) {
+    #configuracion div label, #configuracion div button {
+        width: 70%;
+    }
+
+}
+ 
+@media (max-width: 400px) {
+    body {
+        font-size: 0.6em;
+    }
+
+    #configuracion div label, #configuracion div button {
+        width: 80%;
+        font-size: 1em;
+    }
+
+    #configuracion div select {
+        width: 50%;
+        font-size: 1em;
+    }
+
+    .carta {
+        border: 1px solid black;
+        height: 50px;
+        width: 30px;
+        margin: 3px;
+        font-size: 1.6em;
+        box-shadow: grey 2px 2px 2px;
+        text-shadow: white 2px 2px 2px;
+    }   
 }

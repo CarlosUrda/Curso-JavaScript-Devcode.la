@@ -229,8 +229,6 @@ var Juego = (function()
             }
 
             thisPrv._cartasAEmparejar = new Array( 0); 
-            this.DOM.style.width = Math.ceil(
-                    thisPrv._partida.dimension * 100/_Tablero.MAX_DIMENSION)+"%";
 
         }      
 
@@ -334,7 +332,10 @@ var Juego = (function()
             if (thisPrv._selectEmparejados === null)
                 throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
                                              "Configuracion()","id=emparejados");
-            thisPrv._textIntentos = this.DOM.querySelector( "#intentos");
+            thisPrv._selectDificultad = this.DOM.querySelector( "#dificultad");
+            if (thisPrv._selectDificultad === null)
+                throw new ObjetoDOMException(ObjetoDOMException.ERR_NO_EXISTE, 
+                                             "Configuracion()","id=dificultad");
                       
             thisPrv._botonEmpezar.onclick = 
                 _Configuracion.prototype.pulsarEmpezar.bind( this);
@@ -350,7 +351,7 @@ var Juego = (function()
             {
                 let opcion = document.createElement( "option");
                 opcion.value = i;
-                opcion.textContent = i;
+                opcion.textContent = i*i;
                 thisPrv._selectDimension.appendChild( opcion);
             }
 
@@ -365,9 +366,13 @@ var Juego = (function()
         {
             let thisPrv = priv( this);
 
-            thisPrv._juego.crearPartida( thisPrv._selectDimension.value,
-                                         thisPrv._selectEmparejados.value,
-                                         thisPrv._textIntentos.value);
+            let emparejados = thisPrv._selectEmparejados.value;
+            let dificultad = thisPrv._selectDificultad.value;
+            let dimension = thisPrv._selectDimension.value;
+            let cartas = Math.pow( dimension, 2);
+            let intentos = cartas/emparejados + dificultad * 2;
+
+            thisPrv._juego.crearPartida( dimension, emparejados, intentos);
 
             this.cambiarEstadoMenus( true);
         }
@@ -401,6 +406,7 @@ var Juego = (function()
             thisPrv._botonParar.disabled = !estadoPartida;
             thisPrv._selectDimension.disabled = estadoPartida;
             thisPrv._selectEmparejados.disabled = estadoPartida;
+            thisPrv._selectDificultad.disabled = estadoPartida;
         }
 
 
@@ -460,6 +466,21 @@ var Juego = (function()
                                               "Estadisticas.constructor",
                                               this.DOM.tagName + " table");
 
+            let tbody = thisPrv._tabla.querySelector( "tbody");
+
+            for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
+            {
+                thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
+                let fila = document.createElement( "tr");
+                fila.dataset.tipo = "dim"+i;
+                fila.innerHTML = 
+                    `<th>Dimensión ${i}</th>
+                     <td class="total" data-res="total">0</td>
+                     <td class="victoria" data-res="victoria">0</td>
+                     <td class="derrota" data-res="derrota">0</td>`
+                tbody.appendChild( fila);
+            }
+
             let fila = document.createElement( "tr");
             fila.dataset.tipo = "total";
             fila.innerHTML = 
@@ -467,20 +488,7 @@ var Juego = (function()
                  <td class="total" data-res="total">0</td>
                  <td class="victoria" data-res="victoria">0</td>
                  <td class="derrota" data-res="derrota">0</td>`
-            thisPrv._tabla.querySelector( "tbody").appendChild( fila);
-
-            for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
-            {
-                thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
-                fila = document.createElement( "tr");
-                fila.dataset.tipo = "dim"+i;
-                fila.innerHTML = 
-                    `<th>Dimensión ${i}</th>
-                     <td class="total" data-res="total">0</td>
-                     <td class="victoria" data-res="victoria">0</td>
-                     <td class="derrota" data-res="derrota">0</td>`
-                thisPrv._tabla.querySelector( "tbody").appendChild( fila);
-            }
+            tbody.appendChild( fila);
 
             thisPrv._botonReiniciar = this.DOM.querySelector( "#reiniciar");
             if (thisPrv._botonReiniciar === null)
@@ -618,7 +626,9 @@ var Juego = (function()
                                              "Partida.constructor","id=tablero");
             tableroDOM.innerHTML = "";
             tableroDOM.appendChild( thisPrv._tablero.DOM);
-           
+            this.DOM.style.width = Math.ceil(
+                dimension * 100/_Tablero.MAX_DIMENSION)+"%";
+          
         }
 
         /**

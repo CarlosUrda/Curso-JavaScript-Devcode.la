@@ -13,40 +13,54 @@
     <header>
         <h1>Juego de emparejar cartas</h1>
     </header>
-    <section id="configuracion">
-        <h2>Configuración del juego</h2>
-        <div>
-            <select name="dimension" id="dimension" required></select>
-            <select name="emparejados" id="emparejados" required></select>
-            <label>Número de intentos: 
-                <input id="intentos" type="text" required>
-            </label>
-            <button name="empezar" id="empezar">Empezar rondas</button>
-            <button name="parar" id="parar" disabled>Parar partida</button>
-        </div>
-    </section>
-    <div id="partida-estadisticas">
+    <div id="juego">
         <section id="partida">
             <h2>Partida</h2>
             <div id="intentos"></div>
             <div id="resultado"></div>
             <div id="tablero"></div>
         </section>
-        <aside id="estadisticas">
-            <h3>Estadísticas</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Jugadas</th>
-                        <th>Ganadas</th>
-                        <th>Perdidas</th>           
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <button name="reiniciar" id="reiniciar">Reiniciar</button>
-            <button name="refrescar" id="refrescar">Refrescar</button>
+        <aside>
+            <section id="configuracion">
+                <h2>Configuración</h2>
+                <div>
+                    <label>Cartas: 
+                        <select name="dimension" id="dimension" required></select>
+                    </label>
+                    <label>Emparejar:
+                        <select name="emparejados" id="emparejados" required>
+                        </select>
+                    </label>
+                    <label>Dificultad: 
+                        <select name="dificultad" id="dificultad" required>
+                            <option value="3">Fácil</option>
+                            <option value="2">Normal</option>
+                            <option value="1">Difícil</option>
+                            <option value="0">Extremo</option>
+                        </select>
+                    </label>
+                    <button name="empezar" id="empezar">Empezar partida</button>
+                    <button name="parar" id="parar" disabled>Parar partida</button>
+                </div>
+            </section>
+            <section id="estadisticas">
+                <h2>Estadísticas</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Jugadas</th>
+                            <th>Ganadas</th>
+                            <th>Perdidas</th>           
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="botones-estadisticas">
+                    <button name="reiniciar" id="reiniciar">Reiniciar</button>
+                    <button name="refrescar" id="refrescar">Refrescar</button>
+                </div>
+            </section>
         </aside>
     </div>
     <footer>
