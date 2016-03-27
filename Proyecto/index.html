@@ -16,18 +16,20 @@
     <div id="juego">
         <section id="partida">
             <h2>Partida</h2>
-            <div id="intentos"></div>
-            <div id="resultado"></div>
+            <div id="estado-partida">
+                <label>Intentos: <span id="intentos">-</span></label>
+                <label>Estado: <span id="resultado">-</span></label>
+            </div>
             <div id="tablero"></div>
         </section>
         <aside>
             <section id="configuracion">
                 <h2>Configuración</h2>
                 <div>
-                    <label>Cartas: 
+                    <label>Cartas:  
                         <select name="dimension" id="dimension" required></select>
                     </label>
-                    <label>Emparejar:
+                    <label>Emparejar: 
                         <select name="emparejados" id="emparejados" required>
                         </select>
                     </label>
@@ -64,8 +66,14 @@
         </aside>
     </div>
     <footer>
-        Juego desarrollado por 
-        <a href="https://twitter.com/carlosurda">Carlos A. Gómez Urda</a>.
+        <div>Juego desarrollado por 
+            <a href="https://twitter.com/carlosurda77">Carlos A. Gómez Urda</a>.
+        </div>
+        </div>Repositorio disponible en:
+            <a href="https://github.com/CarlosUrda/Curso-JavaScript-Devcode.la">
+                Github
+            </a>
+        </div>
     </footer>
 
 </body>

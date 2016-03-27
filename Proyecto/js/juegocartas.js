@@ -240,7 +240,7 @@ var Juego = (function()
          */
         pulsar()
         {
-            let thisPrv = priv( this);
+            var thisPrv = priv( this);
             if (thisPrv.bloqueado || 
                 thisPrv._cartasAEmparejar.length < thisPrv._partida.emparejados)
                 return;
@@ -248,14 +248,24 @@ var Juego = (function()
             if (thisPrv._cartasAEmparejar.slice( 1).some( 
                         c => c.valor !== thisPrv._cartasAEmparejar[0].valor))
             {
-                thisPrv._cartasAEmparejar.forEach( c => c.ponerHaciaAbajo());
+                thisPrv._cartasAEmparejar.forEach( 
+                    c => c.DOM.style.borderColor = "red");
+                window.setTimeout( function(){ 
+                    thisPrv._cartasAEmparejar.forEach( c => c.ponerHaciaAbajo());
+                    thisPrv._cartasAEmparejar.forEach( 
+                        c => c.DOM.style.borderColor = "black");
+                    thisPrv._cartasAEmparejar = new Array(0);
+                }, 2000);
             }
             else
             {
-                thisPrv._cartasAEmparejar.forEach( c => c.emparejada = true);
+                thisPrv._cartasAEmparejar.forEach( function(c) {
+                    c.emparejada = true;
+                    c.DOM.style.borderColor = "green";
+                });
+                thisPrv._cartasAEmparejar = new Array(0);
             }
 
-            thisPrv._cartasAEmparejar = new Array(0);
             thisPrv._partida.gastarIntento();
         }
 
@@ -688,6 +698,7 @@ var Juego = (function()
             if (thisPrv._tablero.estanCartasEmparejadas)
             {
                 this.finalizar( "victoria");
+                return;
             }
 
             if (intentosRestantes == 0)

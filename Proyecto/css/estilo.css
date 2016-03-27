@@ -2,11 +2,13 @@ body {
     padding: 0px 20px 0px 20px;
 }
 
-body h1 {
+h1 {
     text-align: center;
+    font-size: 2.3em;
+}
+h2 {
     text-decoration: underline;
 }
-
 
 #juego {
     display: flex;
@@ -20,9 +22,28 @@ body h1 {
 }
 
 #partida {
-    flex-grow: 1;
+    flex-grow: 2;
     flex-basis: auto;
-    background-color: orange;
+    min-width: 360px;
+    background-color: #CABEFF;
+}
+
+#estado-partida {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    flex-wrap: wrap;
+    border-top: 1px dashed grey;
+    border-bottom: 1px dashed grey;
+}
+
+#intentos {
+    margin-right: 15px;
+}
+
+#intentos, #resultado {
+    font-weight: bold;
+    font-size: 1.2em;
 }
 
 #juego aside {
@@ -31,11 +52,11 @@ body h1 {
     flex-direction: column;
     display: flex;
     text-align: center;
-    padding: 0px 10px 10px 10px;
 }
 
 #estadisticas {
-    background-color: lightgreen;
+    background-color: #988EBF;
+    flex-grow: 1;
 }
 
 #estadisticas table {
@@ -45,8 +66,11 @@ body h1 {
 }
 
 #estadisticas thead tr {
-    padding: 8px;
-    
+    padding: 8px;   
+}
+
+#estadisticas thead th {
+    font-size: 0.9em;    
 }
 
 #estadisticas tbody tr {
@@ -59,16 +83,16 @@ body h1 {
 }
 
 #estadisticas tbody th {
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
 #estadisticas tbody tr[data-tipo="total"] {
-    background-color: #ffce74;
+    background-color: #EAB1FF;
     font-size: 1.1em;
 }
 
 #configuracion {
-    background-color: lightblue;
+    background-color: #655F7F;
     padding: 0px 0px 10px 0px;
 }
 
@@ -87,7 +111,7 @@ body h1 {
 }
 
 #configuracion div select {
-    text-align: center;
+    text-align-last: center;
     width: 40%;
 }
 
@@ -96,6 +120,8 @@ body h1 {
     width: 40%;
     padding: 4px; 
     margin: 3px 0px 3px 0px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 
@@ -107,10 +133,10 @@ body h1 {
     width: 70px;
     height: 130px;
     margin: 3px;
-    font-size: 2.5em;
+    font-size: 3em;
     text-align: center;
     box-shadow: grey 5px 5px 5px;
-    text-shadow: white 4px 4px 4px;
+    text-shadow: white 5px 5px 5px;
 }
 
 
@@ -151,14 +177,14 @@ footer {
     padding: 20px 0px 20px 0px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
     #configuracion div label, #configuracion div button {
-        width: 70%;
+        width: 60%;
     }
 
 }
  
-@media (max-width: 400px) {
+@media (max-width: 405px) {
     body {
         font-size: 0.6em;
     }
@@ -181,5 +207,11 @@ footer {
         font-size: 1.6em;
         box-shadow: grey 2px 2px 2px;
         text-shadow: white 2px 2px 2px;
-    }   
+    }  
+    #partida {
+        flex-grow: 2;
+        flex-basis: auto;
+        min-width: 200px;
+    }
+
 }
