@@ -12,6 +12,8 @@
  *   como ahora, sea suficiente.
  * - Ver cómo destruir el árbol DOM del tablero cuando la partida se guarda y 
  *   volver a recrearlo cuando la partida se vuelve a mostrar.
+ * - Dejar el tema de las dimensiones y orientarlo todo al número de cartas.
+ * - Permitir ver partidas antiguas.
  */
 
 
@@ -484,7 +486,7 @@ var Juego = (function()
                 let fila = document.createElement( "tr");
                 fila.dataset.tipo = "dim"+i;
                 fila.innerHTML = 
-                    `<th>Dimensión ${i}</th>
+                    `<th>Cartas ${i*i}</th>
                      <td class="total" data-res="total">0</td>
                      <td class="victoria" data-res="victoria">0</td>
                      <td class="derrota" data-res="derrota">0</td>`

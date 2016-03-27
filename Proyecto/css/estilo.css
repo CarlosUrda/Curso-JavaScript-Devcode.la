@@ -78,12 +78,17 @@ h2 {
     padding: 5px;
 }
 
+#estadisticas tbody tr:nth-child(2n){
+    background-color: #a0a1c5;
+}
+
 #estadisticas tbody td {
     text-align: center;
 }
 
 #estadisticas tbody th {
     font-size: 0.8em;
+    text-align: justify;
 }
 
 #estadisticas tbody tr[data-tipo="total"] {
