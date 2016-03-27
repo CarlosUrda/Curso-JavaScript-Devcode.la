@@ -523,13 +523,14 @@ var Juego = (function()
          */
         reiniciar()
         {
-            if (!confirm( "¿Deseas borrar todos los datos de estadísticas?")) 
+            if (!confirm( "¿Borrar todas las estadísticas y partidas pasadas?")) 
                 return;
                
             let thisPrv = priv( this);
             thisPrv._datos = {total: {total: 0, victoria: 0, derrota: 0}};
             for (let i = 2; i <= _Tablero.MAX_DIMENSION; ++i)
             {
+                thisPrv._juego.eliminarPartidasAnteriores();
                 thisPrv._datos["dim"+i] = {total: 0, victoria: 0, derrota: 0};
             }
  
@@ -838,6 +839,14 @@ var Juego = (function()
             thisPrv._partida = null;
         }
 
+
+        /**
+         * Eliminar todas las partidas anteriores almacenadas hasta ahora.
+         */
+         eliminarPartidasAnteriores()
+         {
+             priv( this)._partidasAnteriores = {};
+         }
     }
 
     return _Juego;

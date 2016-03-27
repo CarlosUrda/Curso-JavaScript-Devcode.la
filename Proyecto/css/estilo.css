@@ -24,7 +24,7 @@ h2 {
 #partida {
     flex-grow: 2;
     flex-basis: auto;
-    min-width: 360px;
+    min-width: 350px;
     background-color: #CABEFF;
 }
 
@@ -189,9 +189,9 @@ footer {
 
 }
  
-@media (max-width: 405px) {
+@media (max-width: 430px) {
     body {
-        font-size: 0.6em;
+        font-size: 0.8em;
     }
 
     #configuracion div label, #configuracion div button {
