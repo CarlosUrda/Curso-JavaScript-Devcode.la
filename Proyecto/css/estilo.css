@@ -142,6 +142,9 @@ h2 {
     text-align: center;
     box-shadow: grey 5px 5px 5px;
     text-shadow: white 5px 5px 5px;
+    -webkit-user-select: none;    
+    -moz-user-select: none;    
+    user-select: none;
 }
 
 
